@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+"""wallrice launcher: finds the wallrice package next to it (a checkout, or ~/.local/share/wallrice
+when installed) and runs the command line."""
+import os
+import sys
+
+here = os.path.dirname(os.path.realpath(__file__))
+for root in (os.path.join(here, ".."), os.path.expanduser("~/.local/share/wallrice")):
+    if os.path.isfile(os.path.join(root, "wallrice", "cli.py")):
+        sys.path.insert(0, os.path.abspath(root))
+        break
+
+from wallrice.cli import main  # noqa: E402
+
+sys.exit(main())

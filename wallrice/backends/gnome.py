@@ -147,7 +147,9 @@ class Gnome(Backend):
     def doctor(self):
         out = []
         ok = gtk.find_dir("themes", gtk.BASE) is not None
-        out.append((ok, f"adw-gtk3 theme {'found' if ok else 'missing: GTK3 apps keep the plain Adwaita look'}"))
+        pkgs = " ".join(self.env.packages("adw-gtk3"))
+        out.append((ok, "adw-gtk3 theme " + ("found" if ok else "missing: GTK3 apps keep the plain Adwaita look"
+                                             + (f"  (install: {pkgs})" if pkgs else ""))))
         out.append((self.env.has("dconf"), "dconf " + ("found" if self.env.has("dconf") else "missing: nothing can be set live")))
         st = self.extension("Version")
         out.append((True if st else None, f"wallrice Shell extension {'active ' + st if st else 'not active: GNOME cross-fades wallpapers itself'}"))

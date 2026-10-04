@@ -11,7 +11,7 @@ import subprocess
 from pathlib import Path
 
 from . import paths
-from .color import WHITE, contrast, hls, hue_distance, luminance, mix, rgb2hex
+from .color import WHITE, hls, hue_distance, luminance, mix, rgb2hex
 from .state import write_atomic
 
 WALLUST = ["wallust", "run", "-N", "-s", "-T", "-n", "-q", "-b", "fastresize", "-c", "salience",
@@ -99,7 +99,8 @@ def layout(cols):
     main = [c for c in cols if c[1] >= 0.03] or cols[:1]
     bg = min(main, key=lambda c: luminance(c[0]))[0]
     fg = max(cols, key=lambda c: luminance(c[0]))[0]
-    fg = mix(fg, WHITE, 0.5) if contrast(fg, bg) < 4.5 else fg
+    while luminance(fg) < 0.6:  # text near white, keeping a trace of the picture's tint
+        fg = mix(fg, WHITE, 0.3)
 
     def salience(c):
         rgb, share = c
@@ -108,7 +109,7 @@ def layout(cols):
             return 0.0
         return s * (share ** 0.35) * (1 - abs(l - 0.55) * 0.8)
     picks = []
-    for rgb, share in sorted(cols, key=salience, reverse=True):
+    for rgb, _share in sorted(cols, key=salience, reverse=True):
         h = hls(rgb)[0]
         if all(hue_distance(h, hls(p)[0]) > 0.04 or hls(p)[2] < 0.1 for p in picks):
             picks.append(rgb)
