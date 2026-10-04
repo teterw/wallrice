@@ -9,8 +9,11 @@ come with a Yes/No review. Pictures you remove stay gone.
 wallrice is the portable successor of the [Chiron Stick](https://github.com/teterw/chiron-stick) desktop
 theme. It installs per user, needs no root at run time, and detects the desktop it's running on.
 
-> Status: **v0.1**. The theme engine and GNOME backend work; the picker, the review, the GNOME Shell
-> extension and the other desktops are on the way (see the [changelog](CHANGELOG.md)).
+> Status: **v0.2**. The theme engine, the GNOME backend, the collections and the Yes/No review work;
+> the picker, the GNOME Shell extension and the other desktops are on the way (see the
+> [changelog](CHANGELOG.md)).
+
+![The Yes/No review](docs/screenshots/review.jpg)
 
 ## What follows the wallpaper
 
@@ -93,6 +96,14 @@ None are AI-generated.
 | [dracula/wallpaper](https://github.com/dracula/wallpaper) | 66 | MIT |
 | [rose-pine/wallpapers](https://github.com/rose-pine/wallpapers) | 91 | CC0 |
 | [D3Ext/aesthetic-wallpapers](https://github.com/D3Ext/aesthetic-wallpapers) | 378 | MIT |
+
+`wallrice walls review` (also in the app menu as *Review wallpapers*) shows every picture you haven't
+kept yet, whole, with its collection, title, size and credit: **→ / Y keep, ← / N remove, Backspace
+undo, Esc stop**. Every choice is saved at once and the review carries on where it stopped. Removed
+pictures leave the disk when the review ends, and stay gone after updates. Holding a key never makes
+more than one choice.
+
+![Review animations: kept cards fly up, removed ones drop away](docs/screenshots/review-animation.jpg)
 
 Git collections are partial clones with a sparse checkout, so only the picture folders download.
 Space images are pinned by SHA-256: a file that doesn't match is skipped. wallrice never
