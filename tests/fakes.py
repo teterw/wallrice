@@ -49,7 +49,8 @@ class FakeRun:
             key = f"kde:{cmd[cmd.index('--group') + 1]}:{cmd[cmd.index('--key') + 1]}"
             return 0, self.values.get(key, "")
         if cmd[0] == "plasma-apply-colorscheme":
-            self.values["kde:General:ColorScheme"] = cmd[-1]
+            if "--accent-color" not in cmd:
+                self.values["kde:General:ColorScheme"] = cmd[-1]
             return 0, ""
         if cmd[:2] == ["hyprctl", "cursorpos"]:
             return 0, "100, 200"

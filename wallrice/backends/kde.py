@@ -54,7 +54,7 @@ def color_scheme(th, slot):
 class Kde(Backend):
     name = "kde"
     features = {"wallpaper": "plasma-apply-wallpaperimage", "live colours": "A/B colour scheme with accent, icons, GTK apps",
-                "transition": "Plasma's own cross-fade", "Super+W": None}
+                "transition": "Plasma's own cross-fade", "Super+W": "by hand in System Settings (install says where)"}
 
     def kread(self, group, key, file="kdeglobals"):
         tool = first_tool(self.env, "kreadconfig6", "kreadconfig5")
@@ -138,11 +138,11 @@ class Kde(Backend):
         return steps
 
     def apply_scheme(self, slot, accent):
-        rc, out = self.run("plasma-apply-colorscheme", "--accent-color", accent, scheme_name(slot))
-        if rc != 0:  # Plasma before 5.26 has no --accent-color
-            rc, out = self.run("plasma-apply-colorscheme", scheme_name(slot))
+        """The scheme, then the accent: given both at once, Plasma 6 applies only the accent."""
+        rc, out = self.run("plasma-apply-colorscheme", scheme_name(slot))
         if rc != 0:
             raise RuntimeError(f"plasma-apply-colorscheme: {out.strip()[:160]}")
+        self.run("plasma-apply-colorscheme", "--accent-color", accent)  # Plasma 5.26+; older ones ignore it
 
     def bind_hint(self, binding, command):
         key = binding.replace("<Super>", "Meta+").replace("<Shift>", "Shift+").replace("w", "W")

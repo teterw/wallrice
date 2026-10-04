@@ -1,0 +1,21 @@
+# Test images for wallrice on other desktops: Fedora with one desktop, run headless.
+#   podman build --build-arg DESKTOP=xfce -t wallrice-test-xfce -f tools/desktops/Containerfile tools/desktops
+ARG FEDORA=44
+FROM registry.fedoraproject.org/fedora:${FEDORA}
+ARG DESKTOP=xfce
+RUN dnf -y install --setopt=install_weak_deps=False \
+        python3 python3-gobject python3-cairo python3-pillow gtk3 dbus-daemon dbus-tools dconf git procps-ng \
+        adw-gtk3-theme papirus-icon-theme ImageMagick google-noto-sans-fonts adwaita-sans-fonts adwaita-mono-fonts \
+        xdg-user-dirs glib2 \
+    && case "$DESKTOP" in \
+        xfce) dnf -y install --setopt=install_weak_deps=False xorg-x11-server-Xvfb xfce4-session xfdesktop xfwm4 \
+                xfce4-panel xfconf xfce4-settings xfce4-terminal xrandr xdotool ;; \
+        sway) dnf -y install --setopt=install_weak_deps=False sway swaybg grim foot waybar libcap \
+                && setcap -r /usr/bin/sway ;; \
+        kde)  dnf -y install --setopt=install_weak_deps=False kwin plasma-workspace plasma-desktop spectacle konsole \
+                kf6-kconfig qt6-qtwayland xorg-x11-server-Xwayland ;; \
+    esac \
+    && dnf clean all
+# compositors with file capabilities (cap_sys_nice) can't start in a rootless container: drop them
+RUN if [ "$DESKTOP" = kde ]; then dnf -y install libcap && setcap -r /usr/bin/kwin_wayland && dnf clean all; fi
+# the scenario (run.sh) comes from the mounted checkout at run time, so it's never stale

@@ -23,7 +23,7 @@ SWWW_FX = {"grow": "grow", "wipe": "wipe", "wave": "wave", "fade": "fade", "rand
 class Wlroots(Backend):
     name = "wlroots"
     features = {"wallpaper": "swww, swaybg or hyprpaper", "live colours": "GTK theme, borders, waybar",
-                "transition": "swww: grow, wipe, wave, fade", "Super+W": None}
+                "transition": "swww: grow, wipe, wave, fade", "Super+W": "a line for the compositor's config (shown by install)"}
 
     @property
     def wm(self):

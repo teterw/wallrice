@@ -18,7 +18,7 @@ OVERLAY_HALF = 0.7
 class X11wm(Backend):
     name = "x11wm"
     features = {"wallpaper": "feh, xwallpaper, nitrogen or hsetroot", "live colours": "xsettingsd, WM borders",
-                "transition": "X11 overlay: grow, wipe, wave, fade", "Super+W": None}
+                "transition": "X11 overlay: grow, wipe, wave, fade", "Super+W": "a line for the WM's config (shown by install)"}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

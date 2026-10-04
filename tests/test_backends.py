@@ -70,15 +70,15 @@ class Backends(unittest.TestCase):
             be = self.apply(home, env, fake)
             self.assertEqual(be.name, "kde")
             self.assertTrue(fake.ran("plasma-apply-wallpaperimage")[0][-1].endswith("w.png"))
-            scheme = fake.ran("plasma-apply-colorscheme")[0]
-            self.assertEqual(scheme[1:3][0], "--accent-color")
-            self.assertEqual(scheme[-1], "Wallrice-a")
+            calls = fake.ran("plasma-apply-colorscheme")
+            self.assertEqual(calls[0], ["plasma-apply-colorscheme", "Wallrice-a"], "the scheme first")
+            self.assertEqual(calls[1][1], "--accent-color", "then the accent on its own call")
             colors = (paths.data_home() / "color-schemes/Wallrice-a.colors").read_text()
             for group in ("Colors:Window", "Colors:View", "Colors:Selection", "Colors:Button", "WM"):
                 self.assertIn(f"[{group}]", colors)
             self.assertEqual(fake.values["/org/gnome/desktop/interface/gtk-theme"], "'Wallrice-a'", "GTK apps on Wayland")
             self.apply(home, env, fake, "x.png", "bright")
-            self.assertEqual(fake.ran("plasma-apply-colorscheme")[-1][-1], "Wallrice-b", "A/B: Plasma re-applies")
+            self.assertEqual(fake.ran("plasma-apply-colorscheme")[-2][-1], "Wallrice-b", "A/B: Plasma re-applies")
             self.assertIn("Meta+W", be.bind_hint("<Super>w", "wallrice pick"))
 
     def test_cinnamon_and_mate(self):

@@ -34,7 +34,15 @@ def icon_caches():
         if not base.is_dir():
             continue
         for t in sorted(base.iterdir()):
-            if (t / "index.theme").is_file() and not (t / "icon-theme.cache").is_file() and t.name != "default":
+            index = t / "index.theme"
+            if not index.is_file() or (t / "icon-theme.cache").is_file() or t.name == "default":
+                continue
+            try:  # cursor-only themes have no icon directories, so nothing to cache
+                has_dirs = any(l.startswith("Directories=") and l.strip() != "Directories="
+                               for l in index.read_text(errors="replace").splitlines())
+            except OSError:
+                has_dirs = False
+            if has_dirs:
                 missing.append(t)
     return missing
 

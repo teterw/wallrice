@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.5.0: every common desktop
+
+- Backends for KDE Plasma, Xfce, Cinnamon, MATE, LXQt, wlroots compositors (Hyprland, Sway, river, …)
+  and X11 window managers (i3, bspwm, Openbox, …), each chosen by detection. See the README's table
+  for what each does live.
+- X11 desktops get animated changes again: the desktop-layer overlay from the stick (grow from the
+  pointer, wipe, wave, fade), with the real wallpaper switched underneath; timer jobs wait for it.
+- wlroots: swww's own transitions (growing from the pointer on Hyprland), border colours live and as
+  include files, waybar reloaded.
+- KDE: A/B colour schemes (Plasma won't re-apply the current one) with the wallpaper's accent.
+- Backups and uninstall cover xfconf and KDE settings too.
+- `tools/desktop-test.sh xfce|sway|kde`: runs a desktop headless in a throwaway container and saves
+  screenshots of the themed desktop, the transitions, the picker and the review.
+- doctor: clearer Super+W lines for desktops where it's set by hand; cursor-only themes no longer
+  count as icon themes missing a cache.
+
 ## v0.4.0: the GNOME Shell extension
 
 - Animated wallpaper changes in GNOME Shell (45-50): a GLSL effect on the old picture reveals the new

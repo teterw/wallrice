@@ -9,9 +9,9 @@ come with a Yes/No review. Pictures you remove stay gone.
 wallrice is the portable successor of the [Chiron Stick](https://github.com/teterw/chiron-stick) desktop
 theme. It installs per user, needs no root at run time, and detects the desktop it's running on.
 
-> Status: **v0.4**. On GNOME everything works: the theme engine, the picker, the collections and the
-> Yes/No review, and a GNOME Shell extension for animated wallpaper changes and the islands top bar.
-> Other desktops are on the way (see the [changelog](CHANGELOG.md)).
+> Status: **v0.5**. GNOME has everything (including a Shell extension for animated changes and the
+> islands top bar); KDE Plasma, Xfce, Cinnamon, MATE, LXQt, wlroots compositors and X11 window
+> managers have their own backends. See the [changelog](CHANGELOG.md).
 
 ![The picker: the wallpaper with a live preview of the themed desktop](docs/screenshots/picker.jpg)
 
@@ -45,12 +45,22 @@ built-in extractor, so it works on every distro.
 
 ## Desktops
 
-| Desktop | Status |
-|---|---|
-| GNOME (Wayland, X11), Budgie, Ubuntu | ✓ (top bar and transitions: GNOME 45-50) |
-| KDE Plasma, Xfce, Cinnamon, MATE, LXQt | planned |
-| Hyprland, Sway and other wlroots compositors | planned |
-| X11 window managers (i3, bspwm, Openbox) | planned |
+| Desktop | Wallpaper | Live colours | Animated changes | Super+W |
+|---|---|---|---|---|
+| GNOME (Wayland), Budgie, Ubuntu | gsettings | GTK 3/4, Shell accent, icons, Ptyxis, dock, islands top bar | extension: grow, wipe, wave, fade | ✓ |
+| KDE Plasma 5/6 | plasma-apply-wallpaperimage | A/B colour scheme with accent, icons, GTK apps | Plasma's fade | System Settings |
+| Xfce | xfconf | GTK theme, icons, panel, xfce4-terminal | X11 overlay: grow, wipe, wave, fade | ✓ |
+| Cinnamon, MATE | dconf | GTK theme, icons | X11 overlay | ✓ |
+| LXQt | pcmanfm-qt | Qt palette, GTK settings, icons | X11 overlay (X11) | ✓ (next login) |
+| Hyprland, Sway, river, … | swww / swaybg / hyprpaper | GTK theme, borders, waybar | swww: grow from the pointer, wipe, wave, fade | config line |
+| i3, bspwm, Openbox, … | feh / xwallpaper / nitrogen | xsettingsd, borders | X11 overlay | config line |
+
+Tested headless on GNOME 50 (the real Shell, `tools/shell-test.sh`) and in containers on Xfce 4.20,
+Sway 1.11 and KDE Plasma 6 (`tools/desktop-test.sh`).
+
+![Xfce: themed terminal, the grow transition, the picker](docs/screenshots/xfce.jpg)
+
+![Sway: borders in the accent of each wallpaper, the picker on Wayland](docs/screenshots/sway.jpg)
 
 On a desktop wallrice doesn't support yet, it still writes the colour files and recolours open
 terminals, and says what it couldn't do.
@@ -156,6 +166,7 @@ python3 -m unittest discover -s tests   # needs Pillow; the UI tests also need G
 ruff check .
 bin/wallrice doctor                     # runs straight from the checkout
 tools/shell-test.sh /tmp/shots          # the extension in a private headless GNOME Shell, with screenshots
+tools/desktop-test.sh xfce /tmp/xfce    # another desktop headless in a throwaway container (xfce, sway, kde)
 ```
 
 See [docs/design.md](docs/design.md) for how the pieces fit together.
