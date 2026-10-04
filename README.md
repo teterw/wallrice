@@ -9,9 +9,9 @@ come with a Yes/No review. Pictures you remove stay gone.
 wallrice is the portable successor of the [Chiron Stick](https://github.com/teterw/chiron-stick) desktop
 theme. It installs per user, needs no root at run time, and detects the desktop it's running on.
 
-> Status: **v0.3**. The theme engine, the GNOME backend, the collections, the Yes/No review and the
-> picker work; the GNOME Shell extension (animated transitions, islands top bar) and the other
-> desktops are on the way (see the [changelog](CHANGELOG.md)).
+> Status: **v0.4**. On GNOME everything works: the theme engine, the picker, the collections and the
+> Yes/No review, and a GNOME Shell extension for animated wallpaper changes and the islands top bar.
+> Other desktops are on the way (see the [changelog](CHANGELOG.md)).
 
 ![The picker: the wallpaper with a live preview of the themed desktop](docs/screenshots/picker.jpg)
 
@@ -47,7 +47,7 @@ built-in extractor, so it works on every distro.
 
 | Desktop | Status |
 |---|---|
-| GNOME (Wayland, X11), Budgie, Ubuntu | ✓ v0.1 |
+| GNOME (Wayland, X11), Budgie, Ubuntu | ✓ (top bar and transitions: GNOME 45-50) |
 | KDE Plasma, Xfce, Cinnamon, MATE, LXQt | planned |
 | Hyprland, Sway and other wlroots compositors | planned |
 | X11 window managers (i3, bspwm, Openbox) | planned |
@@ -86,6 +86,7 @@ wallrice mode [all|calm]            every collection, or only calm ones (photos,
 wallrice rotate off|MINUTES         change the wallpaper on a timer (default 30)
 wallrice pause | resume             no rotation and no animations while the machine is busy
 wallrice animations on|off          animated wallpaper changes
+wallrice bar [STYLE|mono|colour]    top bar style with a live preview (GNOME); dock icon colours
 wallrice walls update [--background]  download or update the wallpaper collections
 wallrice walls review               keep or remove each picture; removed ones stay gone
 wallrice walls status               what's downloaded, kept and removed
@@ -109,6 +110,30 @@ None are AI-generated.
 | [rose-pine/wallpapers](https://github.com/rose-pine/wallpapers) | 91 | CC0 |
 | [D3Ext/aesthetic-wallpapers](https://github.com/D3Ext/aesthetic-wallpapers) | 378 | MIT |
 
+## GNOME: the top bar, the dock and animated wallpaper changes
+
+![GNOME with the wallrice extension: the islands top bar and the floating dock](docs/screenshots/gnome-desktop.jpg)
+
+The wallrice GNOME Shell extension (installed with wallrice) adds what only the Shell can do:
+
+- **Animated wallpaper changes** like swww: the new picture grows from the pointer, wipes or waves in,
+  or fades, on the GPU, halfway through which the whole desktop recolours. The picker hands over
+  seamlessly instead (its own zoom already animated the change).
+- **An islands top bar**: workspaces 1-4, launchers, the window's title in the centre, cpu/mem/net
+  (Vitals' own if you use it), volume/battery/wifi, the clock and a notification bell, each an island
+  in the wallpaper's colours. **Nine styles** to choose from with `wallrice bar` (or *Top bar style* in
+  the app menu); your real top bar changes as you move through them, Enter keeps one, Esc goes back.
+- **The dock** (Dash to Dock or Ubuntu Dock) floats in the theme's colours, with flat monochrome
+  icons (`wallrice bar colour` for colour icons).
+
+![The nine top bar styles](docs/screenshots/bar-styles.jpg)
+
+![Wallpaper transitions: grow, wipe, wave, fade](docs/screenshots/transitions.jpg)
+
+GNOME only loads a newly installed extension at login, so log out and back in once after installing.
+Turning the extension off in the Extensions app puts the stock top bar back; everything else keeps
+working.
+
 ## The review
 
 `wallrice walls review` (also in the app menu as *Review wallpapers*) shows every picture you haven't
@@ -130,6 +155,7 @@ the list, copy `data/collections.conf` to `~/.config/wallrice/`.
 python3 -m unittest discover -s tests   # needs Pillow; the UI tests also need GTK 3
 ruff check .
 bin/wallrice doctor                     # runs straight from the checkout
+tools/shell-test.sh /tmp/shots          # the extension in a private headless GNOME Shell, with screenshots
 ```
 
 See [docs/design.md](docs/design.md) for how the pieces fit together.

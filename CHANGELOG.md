@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.4.0: the GNOME Shell extension
+
+- Animated wallpaper changes in GNOME Shell (45-50): a GLSL effect on the old picture reveals the new
+  one with a soft circle growing from the pointer, an angled soft wipe, a rippling wave, or a fade
+  (1.35 s, eased), on every monitor. wallrice calls `Prepare(effect)` over D-Bus just before setting
+  the wallpaper; the picker asks for none, since it already animated the change. Changes wallrice
+  didn't make keep the Shell's own fade.
+- The islands top bar: workspaces 1-4 (click or scroll), launchers (first three favourites with
+  symbolic icons, and the picker), the focused window's title in the centre, cpu/mem/net (Vitals' if
+  installed), system indicators, the clock moved right, a notification bell. Turning the extension
+  off restores the stock bar.
+- Nine bar styles (outlined, side bars, glow, pills, underline, glass, tinted, floating bar, filled
+  clock), chosen with `wallrice bar`: a chooser that previews each on the current wallpaper and
+  restyles the real top bar live; Enter keeps, Esc reverts. `wallrice bar STYLE` for scripts. The
+  picker's desktop mock draws the chosen style.
+- Dash to Dock / Ubuntu Dock: floating, rounded, in the theme's colours, with monochrome icons (the
+  running dots keep the accent); `wallrice bar colour` turns colour icons back on.
+- The stylesheet and settings live in `~/.local/share/wallrice/gnome-shell.{css,json}`; the extension
+  reloads them as soon as they change.
+- `tools/shell-test.sh`: runs the extension in a private headless GNOME Shell (own home, dconf and
+  session bus) and takes screenshots of the bar styles and transitions.
+
 ## v0.3.0: the picker
 
 - `wallrice pick` (Super+W, *Wallpapers* in the app menu): a full-screen preview screen. It opens by

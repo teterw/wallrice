@@ -24,7 +24,7 @@ gi.require_version("Gdk", "3.0")
 import cairo  # noqa: E402
 from gi.repository import Gdk, GLib, Gtk  # noqa: E402
 
-from .. import backends, collections, detect, engine, palette  # noqa: E402
+from .. import backends, barstyles, collections, detect, engine, palette  # noqa: E402
 from ..color import rgb2hex  # noqa: E402
 from ..state import load_review, load_state, save_review  # noqa: E402
 from ..theme import derive, mix_theme  # noqa: E402
@@ -76,6 +76,7 @@ class PickerView:
         self.toast, self.last_remove = None, -1e9
         self.remove_btn, self.hover_remove, self.current_removed = None, False, False
         self.guard = KeyGuard(gap=0.25)
+        self.bar_style = barstyles.get(load_state().get("bar_style"))
         self.last = now
 
     def d(self, seconds):
@@ -392,7 +393,7 @@ class PickerView:
             cr.save()
             cr.translate(x, y)
             cr.scale(w / self.W, h / self.H)
-            draw_mock(cr, th, mock, self.W, self.H)
+            draw_mock(cr, th, mock, self.W, self.H, self.bar_style)
             cr.restore()
         cr.restore()
         if t > 0.02:
@@ -541,53 +542,12 @@ class PickerView:
                 cr.stroke()
 
 
-def draw_mock(cr, th, a, W, H):
+def draw_mock(cr, th, a, W, H, style=None):
     """The desktop as it will look, at real size (the card scales it down): the islands top bar,
     a file manager with accent folders, a terminal with all 16 colours, a widget, the floating dock."""
     acc, fg, muted, bg, s1, s2 = th["accent"], th["fg"], th["muted"], th["bg"], th["surface"], th["surface2"]
 
-    def island(x, w):
-        rrect(cr, x, 4, w, 26, 9)
-        cr.set_source_rgba(*s1, 0.94 * a)
-        cr.fill_preserve()
-        cr.set_source_rgba(*acc, 0.9 * a)
-        cr.set_line_width(1.5)
-        cr.stroke()
-
-    island(8, 104)  # workspaces 1-4
-    cr.arc(27, 17, 9, 0, 2 * math.pi)
-    cr.set_source_rgba(*acc, a)
-    cr.fill()
-    text(cr, "1", 27, 8, 12, th["on_accent"], a, "Bold", align="center")
-    for i, n in enumerate("234"):
-        text(cr, n, 50 + i * 20, 8, 12, fg, a, align="center")
-    island(120, 96)  # launchers
-    for i in range(4):
-        rrect(cr, 132 + i * 20, 11, 12, 12, 3)
-        cr.set_source_rgba(*fg, 0.85 * a)
-        cr.fill()
-    island(W / 2 - 70, 140)  # the window title
-    text(cr, "Terminal", W / 2, 9, 13, fg, a, align="center")
-    island(W - 420, 140)  # cpu / mem / net
-    for i, lab in enumerate(("cpu", "mem", "net")):
-        text(cr, lab, W - 404 + i * 44, 7, 12, fg, a)
-        cr.rectangle(W - 404 + i * 44, 24, 26 * (0.3 + 0.25 * i), 2)
-        cr.set_source_rgba(*acc, a)
-        cr.fill()
-    island(W - 272, 96)  # volume, battery, wifi
-    for i in range(3):
-        cr.arc(W - 252 + i * 28, 17, 5, 0, 2 * math.pi)
-        cr.set_source_rgba(*fg, 0.9 * a)
-        cr.fill()
-    island(W - 168, 96)  # clock
-    text(cr, time.strftime("%a %H:%M"), W - 120, 8, 13, fg, a, align="center")
-    island(W - 64, 56)  # notifications
-    cr.arc(W - 36, 15, 5, math.pi, 2 * math.pi)
-    cr.line_to(W - 31, 21)
-    cr.line_to(W - 41, 21)
-    cr.close_path()
-    cr.set_source_rgba(*fg, a)
-    cr.fill()
+    barstyles.draw_bar(cr, th, style or barstyles.get(None), W, a, text=text, now=time.time())
 
     def window(x, y, w, h, title):
         shadow(cr, x, y, w, h, 12, 0.08 * a, steps=4, spread=2, drop=6)

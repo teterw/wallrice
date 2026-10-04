@@ -8,6 +8,7 @@
   wallrice rotate off|MINUTES         change the wallpaper on a timer (default 30)
   wallrice pause | resume             no rotation and no animations while the machine is busy
   wallrice animations on|off          animated wallpaper changes
+  wallrice bar [STYLE|mono|colour]    top bar style, with a live preview (GNOME); dock icon colours
   wallrice walls update [--background]  download or update the wallpaper collections
   wallrice walls review               keep or remove each picture; removed ones stay gone
   wallrice walls status               what's downloaded, kept and removed
@@ -127,6 +128,24 @@ def cmd_pause(args):
     return 0
 
 
+def cmd_bar(args):
+    try:
+        from .ui import barchooser
+    except (ImportError, ValueError) as e:
+        if not args.style:
+            return die(f"the chooser needs GTK 3 ({e}); use  wallrice bar STYLE")
+        barchooser = None
+    if args.style:
+        if barchooser is None:
+            from . import barstyles
+            from .backends import gnome
+            st = update_state(bar_style=barstyles.get(args.style).id)
+            gnome.refresh_shell(st)
+            return 0
+        return barchooser.set_style(args.style)
+    return barchooser.main()
+
+
 def cmd_animations(args):
     update_state(animations=args.onoff == "on")
     print(f"animations {args.onoff}")
@@ -170,6 +189,8 @@ def parser():
     r.add_argument("minutes")
     sub.add_parser("pause")
     sub.add_parser("resume")
+    b = sub.add_parser("bar", help="top bar style")
+    b.add_argument("style", nargs="?")
     an = sub.add_parser("animations")
     an.add_argument("onoff", choices=("on", "off"))
     w = sub.add_parser("walls", help="wallpaper collections")
@@ -207,5 +228,5 @@ def main(argv=None):
         return 0
     handlers = {"pick": cmd_pick, "random": cmd_random, "next": cmd_next, "walls": cmd_walls, "mode": cmd_mode,
                 "rotate": cmd_rotate, "pause": cmd_pause, "resume": cmd_pause, "animations": cmd_animations,
-                "status": cmd_status, "login": cmd_login}
+                "status": cmd_status, "login": cmd_login, "bar": cmd_bar}
     return handlers[cmd](args)
