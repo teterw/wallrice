@@ -18,6 +18,7 @@ class Context:
     old: Path = None          # the wallpaper before this one
     icons: dict = None        # the Papirus overlay plan, when Papirus is installed
     notes: list = field(default_factory=list)
+    settle: float = 0.0       # seconds after apply() returns until the desktop fully shows the picture
 
 
 class Backend:

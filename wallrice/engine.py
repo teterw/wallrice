@@ -87,6 +87,7 @@ def apply(img, effect="random", quiet=False, env=None, backend=None):
     if plan:
         write_icons(plan)
 
+    t_set = time.monotonic()
     wait = backend.set_wallpaper(ctx)
     if wait > 0 and effect != "none":
         time.sleep(wait)  # recolour halfway through the transition
@@ -96,6 +97,7 @@ def apply(img, effect="random", quiet=False, env=None, backend=None):
             step()
         except Exception as e:  # noqa: BLE001 - one step failing never stops the rest
             ctx.notes.append(f"{label}: {e}")
+    ctx.settle = max(0.0, ctx.settle - (time.monotonic() - t_set))
     update_state(wallpaper=str(img), slot=slot, accent=rgb2hex(th["accent"]), backend=backend.name)
     if not quiet:
         print(f"applied {img.name}: accent {rgb2hex(th['accent'])}, background {rgb2hex(th['bg'])}")

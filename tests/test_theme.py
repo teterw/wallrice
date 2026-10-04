@@ -34,6 +34,23 @@ class Derive(unittest.TestCase):
         self.assertGreaterEqual(s, 0.25, "a grey wallpaper still gets an accent with some colour")
         self.assertTrue(0.68 < h < 0.78, f"no hue to keep, so the accent is violet, not red (hue {h:.2f})")
 
+    def test_grey_wallpaper_terminal_still_has_colours(self):
+        """Grey slots become ANSI-like colours, so errors and successes still look different."""
+        c = theme.derive(GREY)
+        hues = [hls(c["term"][i])[0] for i in range(1, 7)]
+        for i in range(1, 7):
+            self.assertGreater(hls(c["term"][i])[2], 0.25, f"terminal colour {i} isn't grey")
+        self.assertGreater(max(hues) - min(hues), 0.3, "several different hues")
+        self.assertTrue(0.68 < hls(c["accent"])[0] < 0.78, "the accent is still violet")
+
+    def test_colourful_terminal_left_alone(self):
+        """A colourful wallpaper's terminal colours are its own (only raised to 4.5:1)."""
+        from wallrice.color import WHITE, hex2rgb, rgb2hex, toward
+        c = theme.derive(DARK)
+        for i in range(1, 7):
+            want = toward(hex2rgb(DARK[f"color{i}"]), WHITE, c["bg"], 4.5)
+            self.assertEqual(rgb2hex(c["term"][i]), rgb2hex(want))
+
     def test_nearest_named_accent(self):
         named = {"blue": "#3584e4", "red": "#e62d42", "purple": "#9141ac", "slate": "#6f8396"}
         self.assertEqual(theme.nearest(theme.BRAND, named), "purple")

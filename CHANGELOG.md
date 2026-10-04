@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.3.0: the picker
+
+- `wallrice pick` (Super+W, *Wallpapers* in the app menu): a full-screen preview screen. It opens by
+  shrinking the current wallpaper, drawn exactly as the desktop shows it, into a card with the
+  screen's shape, over a blurred, darkened backdrop; the UI slides in.
+- Filmstrip with spring scrolling, the selected picture raised with an accent glow; the card
+  cross-fades and sharpens; a live mock of the themed desktop at real size and the palette with hex
+  codes; everything recolours smoothly (0.45 s). Type to search, Tab for the bare picture.
+- Enter grows the picture to full screen while the theme is applied, and closes only once the desktop
+  shows it (GNOME's own fade included). Esc goes back the same way.
+- Delete / ✕ removes a wallpaper like a review Remove; Ctrl+Z restores the exact previous choice; a
+  held Delete acts once; removing the current wallpaper makes Esc apply the one on show.
+- One background loader by priority, LRU caches, reduced-size JPEG decoding: no stutter.
+- Terminal colours: grey slots become ANSI-like colours tinted toward the accent, so grey wallpapers
+  still give terminals where errors and successes look different.
+
 ## v0.2.0: the Yes/No review
 
 - `wallrice walls review`: every picture not reviewed yet, whole, on a blurred copy of itself, with

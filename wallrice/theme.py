@@ -8,6 +8,17 @@ BRAND = hex2rgb("#8b5cf6")  # violet: grey wallpapers have no hue of their own t
 KEYS = ("bg", "fg", "accent", "on_accent", "surface", "surface2", "muted")
 
 
+# Terminal colour slots 1-6 (and 9-14): red, yellow, green, cyan, blue, magenta hues
+ANSI_HUES = {1: 0.0, 2: 0.33, 3: 0.14, 4: 0.6, 5: 0.83, 6: 0.5}
+
+
+def ansi_tint(i, accent):
+    """A readable ANSI-like colour for terminal slot i, harmonised with the accent: grey wallpapers
+    would otherwise give terminals with no colours to tell errors from successes."""
+    c = from_hls(ANSI_HUES[i % 8], 0.62 if i < 8 else 0.72, 0.5)
+    return mix(c, accent, 0.25)
+
+
 def accent_score(c):
     """Saturated, mid-light colours make good accents."""
     _, l, s = hls(c)
@@ -35,6 +46,8 @@ def derive(palette, brand=BRAND):
     term = []
     for i in range(16):
         c = hex2rgb(palette.get(f"color{i}", "#808080"))
+        if i % 8 in ANSI_HUES and hls(c)[2] < 0.12:
+            c = ansi_tint(i, accent)  # a grey slot: a real colour, tinted toward the accent
         if i not in (0, 8):
             c = toward(c, WHITE, bg, 4.5)  # every terminal colour readable on the background
         term.append(c)

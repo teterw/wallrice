@@ -9,11 +9,23 @@ come with a Yes/No review. Pictures you remove stay gone.
 wallrice is the portable successor of the [Chiron Stick](https://github.com/teterw/chiron-stick) desktop
 theme. It installs per user, needs no root at run time, and detects the desktop it's running on.
 
-> Status: **v0.2**. The theme engine, the GNOME backend, the collections and the Yes/No review work;
-> the picker, the GNOME Shell extension and the other desktops are on the way (see the
-> [changelog](CHANGELOG.md)).
+> Status: **v0.3**. The theme engine, the GNOME backend, the collections, the Yes/No review and the
+> picker work; the GNOME Shell extension (animated transitions, islands top bar) and the other
+> desktops are on the way (see the [changelog](CHANGELOG.md)).
 
-![The Yes/No review](docs/screenshots/review.jpg)
+![The picker: the wallpaper with a live preview of the themed desktop](docs/screenshots/picker.jpg)
+
+## The picker
+
+**Super+W** (or *Wallpapers* in the app menu) opens a full-screen preview screen. The current
+wallpaper shrinks into a card over a blurred backdrop; browse with the arrow keys, the mouse wheel or
+by clicking the filmstrip, and the card shows each picture with a mock of the themed desktop drawn
+on it (bar, file manager, terminal with all 16 colours, dock) and the palette underneath, everything
+recolouring smoothly. **Enter** grows the picture back to full screen while the theme is applied
+underneath; **Esc** goes back. Type to search, **Tab** shows the bare picture, and **Delete** (or the
+card's ✕) removes a wallpaper for good, with **Ctrl+Z** to undo.
+
+![Picker animations: opening, browsing, removing, applying](docs/screenshots/picker-animation.jpg)
 
 ## What follows the wallpaper
 
@@ -97,13 +109,15 @@ None are AI-generated.
 | [rose-pine/wallpapers](https://github.com/rose-pine/wallpapers) | 91 | CC0 |
 | [D3Ext/aesthetic-wallpapers](https://github.com/D3Ext/aesthetic-wallpapers) | 378 | MIT |
 
+## The review
+
 `wallrice walls review` (also in the app menu as *Review wallpapers*) shows every picture you haven't
 kept yet, whole, with its collection, title, size and credit: **→ / Y keep, ← / N remove, Backspace
 undo, Esc stop**. Every choice is saved at once and the review carries on where it stopped. Removed
 pictures leave the disk when the review ends, and stay gone after updates. Holding a key never makes
 more than one choice.
 
-![Review animations: kept cards fly up, removed ones drop away](docs/screenshots/review-animation.jpg)
+![The Yes/No review](docs/screenshots/review.jpg)
 
 Git collections are partial clones with a sparse checkout, so only the picture folders download.
 Space images are pinned by SHA-256: a file that doesn't match is skipped. wallrice never

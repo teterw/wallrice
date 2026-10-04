@@ -113,16 +113,18 @@ class Gnome(Backend):
         return sorted({**self.wallpaper_keys(ctx.img), **self.theme_keys(ctx)})
 
     def set_wallpaper(self, ctx):
-        wait = GNOME_FADE * 0.45
-        if ctx.effect != "none":
-            out = self.extension("Prepare", ctx.effect)  # "(1.3,)": the effect's length in seconds
-            if out:
-                try:
-                    wait = float(out.strip("(),")) * 0.5
-                except ValueError:
-                    pass
+        """With the wallrice extension running, it plays the effect (or none: the picker has already
+        animated the change). Without it, GNOME cross-fades for a second by itself."""
+        length = GNOME_FADE
+        out = self.extension("Prepare", ctx.effect)  # "(1.3,)": the effect's length in seconds
+        if out:
+            try:
+                length = float(out.strip("(),"))
+            except ValueError:
+                pass
         self.load(self.wallpaper_keys(ctx.img))
-        return wait
+        ctx.settle = length
+        return length * 0.5
 
     def activate(self, ctx):
         return [("GNOME theme, accent, icons, terminal and dock", lambda: self.load(self.theme_keys(ctx)))]
