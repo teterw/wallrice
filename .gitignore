@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+build/
+dist/
+*.egg-info/
+
+# Never commit wallpapers: they're downloaded by `wallrice walls update`, with credit to the sources
+*.jpg
+*.jpeg
+*.png
+*.webp
+!docs/screenshots/*.png
+!docs/screenshots/*.jpg
+
+# Local state and secrets
+*.log
+.env
+backup*.ini
