@@ -52,7 +52,20 @@ apply: palette ─► derive() contrast-safe theme ─► render every output in
   grow/wipe/wave/fade shaders, and restyles the top bar as accent-bordered islands from a generated
   stylesheet it reloads live.
 
+## Other desktops
+
+Each backend (`wallrice/backends/`) implements the same interface. X11 desktops share the overlay
+transition (`ui/transition_x11.py`); wlroots uses swww's own. Backups name settings by key: dconf
+paths, or prefixed keys (`xfconf:…`, `kde:…`) that the backend reads and restores itself.
+
+## Testing
+
+- `python3 -m unittest discover -s tests`: colours, palettes, every backend with a fake command
+  runner, the picker/review/chooser logic, and offscreen drawing.
+- `tools/shell-test.sh`: the extension in a private headless GNOME Shell, with screenshots.
+- `tools/desktop-test.sh xfce|sway|kde`: a desktop headless in a throwaway container.
+
 ## Releases
 
-v0.1 engine + GNOME backend + doctor + install/uninstall + tests/CI · v0.2 collections + review ·
-v0.3 picker · v0.4 GNOME extension · v0.5+ other desktops.
+v0.1 engine + GNOME backend · v0.2 collections + review · v0.3 picker · v0.4 GNOME extension and
+bar styles · v0.5 every common desktop · v0.5.1 polish (stick review import, seamless picker).
