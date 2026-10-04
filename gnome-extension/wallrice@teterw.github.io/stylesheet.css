@@ -1,0 +1,6 @@
+/* wallrice: the colours come from ~/.local/share/wallrice/gnome-shell.css, written by the wallrice
+   program on every wallpaper change. These are only the shapes, for before the first theme. */
+.wallrice-ws { spacing: 4px; }
+.wallrice-ws-dot { min-width: 24px; height: 24px; border-radius: 12px; }
+.wallrice-launchers { spacing: 10px; }
+.wallrice-title { font-weight: normal; }

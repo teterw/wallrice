@@ -27,7 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: shellcheck
-        run: shellcheck install.sh uninstall.sh
+        run: shellcheck install.sh uninstall.sh tools/shell-test.sh
+      - name: GNOME Shell extension parses
+        run: for f in gnome-extension/*/*.js; do node --input-type=module --check < "$f" || exit 1; done
       - name: Installer dry run
         run: |
           python3 -m pip install --user Pillow

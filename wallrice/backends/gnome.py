@@ -10,11 +10,13 @@
   transitions    GNOME cross-fades by itself; the wallrice Shell extension adds grow/wipe/wave
   Super+W        a custom keybinding in org.gnome.settings-daemon.plugins.media-keys
 """
+import json
 from pathlib import Path
 
-from .. import paths
+from .. import barstyles, paths
 from ..color import rgb2hex
 from ..render import gtk, icons
+from ..state import load_state
 from ..theme import nearest
 from .base import Backend, gv_list, gv_str, gv_strip
 
@@ -82,10 +84,14 @@ class Gnome(Backend):
         if not self.env.has("gdbus"):
             return None
         rc, out = self.run("gdbus", "call", "--session", "--dest", "org.gnome.Shell", "--object-path", EXT_PATH,
-                           "--method", f"{EXT_IFACE}.{method}", *args, timeout=3)
+                           "--method", f"{EXT_IFACE}.{method}", *(gv_str(a) for a in args), timeout=3)
         return out.strip() if rc == 0 else None
 
     # ---------------------------------------------------------------- applying
+
+    def outputs(self, ctx):
+        """The stylesheet and settings the wallrice Shell extension loads (and reloads live)."""
+        return shell_files(ctx.theme)
 
     def theme_keys(self, ctx):
         th = ctx.theme
@@ -171,4 +177,32 @@ class Gnome(Backend):
 
 def gnome_extensions_dir():
     return paths.data_home() / "gnome-shell" / "extensions"
+
+
+def shell_css_path():
+    return paths.data() / "gnome-shell.css"
+
+
+def shell_files(theme, st=None):
+    """{path: text} for the extension: its stylesheet, and its settings (bar style, dock icons)."""
+    st = st or load_state()
+    style = barstyles.get(st.get("bar_style"))
+    settings = {"bar_style": style.id, "dock_mono": bool(st.get("dock_mono", True)), "workspaces": 4}
+    return {shell_css_path(): barstyles.shell_css(theme, style, dock=True),
+            paths.data() / "gnome-shell.json": json.dumps(settings, indent=1) + "\n"}
+
+
+def refresh_shell(st=None):
+    """Rewrite the extension's files from the current wallpaper (after a bar or dock setting changed):
+    the extension notices and restyles the real top bar at once."""
+    from ..palette import extract
+    from ..state import write_atomic
+    from ..theme import derive
+    st = st or load_state()
+    cur = st.get("wallpaper")
+    if not cur or not Path(cur).is_file():
+        return False
+    for path, text in shell_files(derive(extract(cur)), st).items():
+        write_atomic(path, text)
+    return True
 

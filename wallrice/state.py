@@ -6,7 +6,8 @@ from pathlib import Path
 
 from . import paths
 
-DEFAULTS = {"wallpaper": None, "mode": "all", "paused": False, "animations": True, "rotate_minutes": 30}
+DEFAULTS = {"wallpaper": None, "mode": "all", "paused": False, "animations": True, "rotate_minutes": 30,
+            "bar_style": "outlined", "dock_mono": True}
 
 
 def write_atomic(path, text, mode=None):

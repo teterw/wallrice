@@ -45,7 +45,10 @@ def open_terminals(uid=None, pts=Path("/dev/pts")):
 
 
 def send_osc(theme, terminals=None):
-    """Write the sequences to every open terminal. Returns how many took them."""
+    """Write the sequences to every open terminal. Returns how many took them. WALLRICE_TERMINALS=0
+    turns this off (the headless Shell test does, so it can't recolour the real desktop's terminals)."""
+    if terminals is None and os.environ.get("WALLRICE_TERMINALS") == "0":
+        return 0
     seq = osc(theme).encode()
     n = 0
     for p in open_terminals() if terminals is None else terminals:
