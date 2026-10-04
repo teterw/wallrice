@@ -35,6 +35,41 @@ class Backend:
         rc, out = self.run("dconf", "read", key)
         return out.strip() if rc == 0 and out.strip() else None
 
+    def load(self, keys):
+        """Write {"/path/to/key": gvariant_text} in one dconf transaction."""
+        sections = {}
+        for key, value in keys.items():
+            d, k = key.rsplit("/", 1)
+            sections.setdefault(d.strip("/"), []).append(f"{k}={value}")
+        ini = "".join(f"[{d}]\n" + "\n".join(lines) + "\n\n" for d, lines in sections.items())
+        rc, out = self.run("dconf", "load", "/", input=ini)
+        if rc != 0:
+            raise RuntimeError(f"dconf load failed: {out.strip()[:200]}")
+
+    def finish(self):
+        """Wait for anything still animating (a timer job's processes end with the job)."""
+
+    # Backups: settings are named by keys. dconf keys are paths ("/org/..."); backends with other
+    # settings stores use their own prefixes ("xfconf:CHANNEL:PROP", "kde:...") and override these.
+    def read_setting(self, key):
+        return self.read(key) if key.startswith("/") else None
+
+    def restore_setting(self, key, value):
+        if not key.startswith("/"):
+            return
+        if value is None:
+            self.run("dconf", "reset", key)
+        else:
+            self.run("dconf", "write", key, value)
+
+    def bind_hint(self, binding, command):
+        """What to add by hand where wallrice can't set a shortcut itself."""
+        return f"add a shortcut in the desktop's keyboard settings: {binding} runs  {command}"
+
+    def autostart_hint(self, command):
+        """Desktops that don't run XDG autostart: the line to add to their config, or None."""
+        return None
+
     def current_slot(self):
         """The A/B slot in use right now, read from the desktop, or None."""
         return None
@@ -46,6 +81,10 @@ class Backend:
     def outputs(self, ctx):
         """Extra files this desktop needs: {path: text}. Must not change anything."""
         return {}
+
+    def gtk_css(self, ctx):
+        """Extra GTK 3 CSS for this desktop's own GTK widgets (Xfce's panel, notifications)."""
+        return ""
 
     def settings_touched(self, ctx):
         """dconf keys this backend will change (for the backup)."""

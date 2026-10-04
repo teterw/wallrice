@@ -33,7 +33,7 @@ def render_all(ctx, backend):
     """Every output, in memory: ({path: text}, icon plan). Raises if anything can't be made."""
     th, env, slot = ctx.theme, ctx.env, ctx.slot
     files = {}
-    files.update(gtk.outputs(th, slot))
+    files.update(gtk.outputs(th, slot, extra=backend.gtk_css(ctx)))
     files.update(terminals.outputs(th, env, slot))
     files.update(apps.outputs(th, env))
     plan = icons.plan(th["accent"], slot)
@@ -81,7 +81,7 @@ def apply(img, effect="random", quiet=False, env=None, backend=None):
     files, plan = render_all(ctx, backend)
     ctx.icons = plan
 
-    backup.record(files, backend.settings_touched(ctx), reader=backend.read)
+    backup.record(files, backend.settings_touched(ctx), reader=backend.read_setting)
     for path, text in files.items():
         write_atomic(path, text)
     if plan:
@@ -97,6 +97,7 @@ def apply(img, effect="random", quiet=False, env=None, backend=None):
             step()
         except Exception as e:  # noqa: BLE001 - one step failing never stops the rest
             ctx.notes.append(f"{label}: {e}")
+    backend.finish()
     ctx.settle = max(0.0, ctx.settle - (time.monotonic() - t_set))
     update_state(wallpaper=str(img), slot=slot, accent=rgb2hex(th["accent"]), backend=backend.name)
     if not quiet:

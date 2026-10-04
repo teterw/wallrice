@@ -44,7 +44,7 @@ def theme_name(slot):
     return f"Wallrice-{slot}"
 
 
-def gtk3_theme(theme, slot):
+def gtk3_theme(theme, slot, extra=""):
     """The A/B GTK theme: {path: text}. Without adw-gtk3 installed, GTK's own Adwaita dark is the base
     (the colours then only reach selections and accents; `wallrice doctor` says to install adw-gtk3)."""
     root = paths.data_home() / "themes" / theme_name(slot)
@@ -58,6 +58,8 @@ def gtk3_theme(theme, slot):
         else:
             imp = ""
         css = f"/* {HEADER} */\n{imp}{define_colors(theme)}\n"
+        if ver == "gtk-3.0" and extra:
+            css += extra
         if ver == "gtk-4.0":
             css += css_variables(theme) + "\n"
         files[root / ver / "gtk.css"] = css
@@ -73,7 +75,7 @@ def gtk4_user_css(theme):
     return f"/* {HEADER} */\n{define_colors(theme)}\n{css_variables(theme)}\n"
 
 
-def outputs(theme, slot):
-    files = gtk3_theme(theme, slot)
+def outputs(theme, slot, extra=""):
+    files = gtk3_theme(theme, slot, extra)
     files[paths.config_home() / "gtk-4.0" / "gtk.css"] = gtk4_user_css(theme)
     return files

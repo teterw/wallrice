@@ -72,7 +72,8 @@ def install(dry_run=False, say=print):
             write_atomic(apps_dir / f"{name}.desktop",
                          f"[Desktop Entry]\nType=Application\nName={title}\nComment={comment}\n"
                          f"Exec={exe()} {args}\nIcon={icon}\nCategories=Settings;DesktopSettings;\nTerminal=false\n")
-    say("autostart: wallrice login (session start)")
+    hint = be.autostart_hint(f"{exe()} login")
+    say("autostart: wallrice login (session start)" + (f"; this desktop needs it in its config too: {hint}" if hint else ""))
     if not dry_run:
         write_atomic(paths.config_home() / "autostart" / "wallrice.desktop",
                      "[Desktop Entry]\nType=Application\nName=wallrice\nComment=Wallpaper theme: session start\n"
@@ -83,12 +84,10 @@ def install(dry_run=False, say=print):
             continue
         try:
             done = be.bind_key(binding, f"{exe()} {args}", name)
-        except Exception as e:  # noqa: BLE001
-            done, why = False, str(e)
-        else:
-            why = "this desktop's shortcuts aren't supported yet"
+        except Exception:  # noqa: BLE001
+            done = False
         say(f"shortcut {binding}: wallrice {args}" if done else
-            f"shortcut {binding}: add it yourself in the desktop's keyboard settings: {exe()} {args}  ({why})")
+            f"shortcut {binding}: {be.bind_hint(binding, f'{exe()} {args}')}")
     set_rotation(st.get("rotate_minutes", 30), dry_run, say)
     if env.has("update-desktop-database") and not dry_run:
         run("update-desktop-database", str(apps_dir))
@@ -193,7 +192,7 @@ def uninstall(dry_run=False, say=print):
             say(f"remove {p}")
             if not dry_run:
                 p.unlink()
-    n = backup.restore(dry_run=dry_run, say=say)
+    n = backup.restore(dry_run=dry_run, say=say, writer=be.restore_setting)
     say(f"restored {n} setting(s) and file(s) from the backup")
     for base, prefix in ((paths.data_home() / "themes", "Wallrice-"), (paths.data_home() / "icons", "Wallrice-")):
         for d in sorted(base.glob(prefix + "*")) if base.is_dir() else []:

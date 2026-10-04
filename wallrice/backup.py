@@ -87,14 +87,17 @@ def dconf_read(key):
     return out or None
 
 
-def restore(dry_run=False, say=print):
-    """Put every recorded original back. Returns the number of things restored."""
+def restore(dry_run=False, say=print, writer=None):
+    """Put every recorded original back. `writer(key, value)` restores a setting (the backend's;
+    plain dconf by default). Returns the number of things restored."""
     m = load()
     n = 0
     for key, value in sorted(m["dconf"].items()):
         say(f"restore {key} = {value if value is not None else '(unset)'}")
         if not dry_run:
-            if value is None:
+            if writer is not None:
+                writer(key, value)
+            elif value is None:
                 run("dconf", "reset", key)
             else:
                 run("dconf", "write", key, value)

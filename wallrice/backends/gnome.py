@@ -43,17 +43,6 @@ class Gnome(Backend):
 
     # ---------------------------------------------------------------- dconf helpers
 
-    def load(self, keys):
-        """Write {"/path/to/key": gvariant_text} in one dconf transaction."""
-        sections = {}
-        for key, value in keys.items():
-            d, k = key.rsplit("/", 1)
-            sections.setdefault(d.strip("/"), []).append(f"{k}={value}")
-        ini = "".join(f"[{d}]\n" + "\n".join(lines) + "\n\n" for d, lines in sections.items())
-        rc, out = self.run("dconf", "load", "/", input=ini)
-        if rc != 0:
-            raise RuntimeError(f"dconf load failed: {out.strip()[:200]}")
-
     # ---------------------------------------------------------------- state
 
     def current_slot(self):
