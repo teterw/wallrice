@@ -58,10 +58,8 @@ class Styles(unittest.TestCase):
             self.assertFalse(json.loads((paths.data() / "gnome-shell.json").read_text())["dock_mono"])
 
     def test_unknown_style_is_an_error(self):
-        if barchooser is None:
-            self.skipTest(SKIP)
-        with fake_home(), mock.patch("builtins.print"):
-            self.assertEqual(barchooser.set_style("sparkly"), 2)
+        with fake_home(), mock.patch("sys.stderr"):
+            self.assertEqual(cli.main(["bar", "sparkly"]), 2)
 
 
 @unittest.skipIf(barchooser is None, f"needs GTK 3 + cairo: {SKIP}")

@@ -206,22 +206,6 @@ class ChooserWindow(Gtk.Window):
         return True
 
 
-def set_style(name, say=print):
-    """`wallrice bar STYLE`: set it without the chooser."""
-    if name in ("mono", "colour", "color"):
-        st = update_state(dock_mono=name == "mono")
-    else:
-        style = barstyles.get(name)
-        if style.id != name and not (name.isdigit() and 1 <= int(name) <= len(barstyles.STYLES)):
-            say(f"wallrice: unknown style {name}. Styles: " + ", ".join(
-                f"{i + 1} {s.id}" for i, s in enumerate(barstyles.STYLES)))
-            return 2
-        st = update_state(bar_style=style.id)
-    gnome.refresh_shell(st)
-    say(f"top bar: {barstyles.get(st['bar_style']).name} · dock icons {'monochrome' if st['dock_mono'] else 'colour'}")
-    return 0
-
-
 def main():
     if Gdk.Display.get_default() is None:
         print("wallrice: the chooser needs a graphical session; use  wallrice bar STYLE", file=sys.stderr)

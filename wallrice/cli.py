@@ -128,21 +128,30 @@ def cmd_pause(args):
     return 0
 
 
+def set_bar(name):
+    """`wallrice bar STYLE|mono|colour`: set it without the chooser (no GTK needed)."""
+    from . import barstyles
+    from .backends import gnome
+    if name in ("mono", "colour", "color"):
+        st = update_state(dock_mono=name == "mono")
+    else:
+        style = barstyles.get(name)
+        if style.id != name and not (name.isdigit() and 1 <= int(name) <= len(barstyles.STYLES)):
+            return die(f"unknown style {name}. Styles: " + ", ".join(
+                f"{i + 1} {s.id}" for i, s in enumerate(barstyles.STYLES)), 2)
+        st = update_state(bar_style=style.id)
+    gnome.refresh_shell(st)
+    print(f"top bar: {barstyles.get(st['bar_style']).name} · dock icons {'monochrome' if st['dock_mono'] else 'colour'}")
+    return 0
+
+
 def cmd_bar(args):
+    if args.style:
+        return set_bar(args.style)
     try:
         from .ui import barchooser
     except (ImportError, ValueError) as e:
-        if not args.style:
-            return die(f"the chooser needs GTK 3 ({e}); use  wallrice bar STYLE")
-        barchooser = None
-    if args.style:
-        if barchooser is None:
-            from . import barstyles
-            from .backends import gnome
-            st = update_state(bar_style=barstyles.get(args.style).id)
-            gnome.refresh_shell(st)
-            return 0
-        return barchooser.set_style(args.style)
+        return die(f"the chooser needs GTK 3 ({e}); use  wallrice bar STYLE")
     return barchooser.main()
 
 
