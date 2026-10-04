@@ -100,6 +100,7 @@ wallrice bar [STYLE|mono|colour]    top bar style with a live preview (GNOME); d
 wallrice walls update [--background]  download or update the wallpaper collections
 wallrice walls review               keep or remove each picture; removed ones stay gone
 wallrice walls status               what's downloaded, kept and removed
+wallrice walls import FILE          take Keep/Remove choices from another review.json (e.g. the stick's)
 wallrice status                     current wallpaper and settings
 wallrice doctor                     what was detected, which pieces are active, what's missing
 ```

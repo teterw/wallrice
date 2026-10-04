@@ -4,5 +4,5 @@
   "description": "The desktop takes its colours from the wallpaper (wallrice): animated wallpaper changes (grow from the pointer, wipe, wave, fade) and a top bar of accent-bordered islands in nine styles, restyled live on every wallpaper change. Needs the wallrice program: https://github.com/teterw/wallrice",
   "shell-version": ["45", "46", "47", "48", "49", "50"],
   "url": "https://github.com/teterw/wallrice",
-  "version-name": "0.4.0"
+  "version-name": "0.5.1"
 }

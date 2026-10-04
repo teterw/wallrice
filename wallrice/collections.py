@@ -292,6 +292,31 @@ def apply_review():
                 p.replace(trash)
 
 
+def import_review(path, say=print):
+    """Merge Keep/Remove choices from another review.json (e.g. Chiron Stick's walls-review.json, which
+    names pictures the same way). Choices made here win over imported ones. Removed pictures then leave
+    the disk, as after a review."""
+    import json
+    from .state import save_review
+    try:
+        d = json.loads(Path(path).read_text(encoding="utf-8"))
+        theirs = {"keep": set(d.get("keep", [])), "drop": set(d.get("drop", []))}
+    except (OSError, ValueError, AttributeError) as e:
+        say(f"wallrice: can't read {path}: {e}")
+        return 1
+    mine = load_review()
+    decided = mine["keep"] | mine["drop"]
+    new_keep = theirs["keep"] - decided - theirs["drop"]
+    new_drop = theirs["drop"] - decided
+    mine["keep"] |= new_keep
+    mine["drop"] |= new_drop
+    save_review(mine)
+    apply_review()
+    say(f"imported {len(new_keep)} kept and {len(new_drop)} removed "
+        f"({len((theirs['keep'] | theirs['drop']) & decided)} already decided here, left as they were)")
+    return 0
+
+
 def status(say=print):
     review = load_review()
     pics = all_pictures()

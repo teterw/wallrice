@@ -118,6 +118,24 @@ class RemovedStayGone(unittest.TestCase):
             self.assertEqual(calm, ["space/a.jpg", "elementary/backgrounds/b.jpg"])
             self.assertEqual(json.loads(paths.review_file().read_text())["drop"], ["rose-pine/anime/d.png"])
 
+    def test_import_choices_from_the_stick(self):
+        """Imported choices fill in; choices already made here are left alone; removed files go."""
+        import json
+        with fake_home() as home:
+            for rel in ("space/a.jpg", "space/b.jpg", "space/c.jpg", "space/d.jpg"):
+                (home / "Pictures/walls" / rel).parent.mkdir(parents=True, exist_ok=True)
+                (home / "Pictures/walls" / rel).write_bytes(b"x")
+            save_review({"keep": {"space/a.jpg"}, "drop": set()})
+            stick = home / "walls-review.json"
+            stick.write_text(json.dumps({"keep": ["space/b.jpg"], "drop": ["space/a.jpg", "space/c.jpg"]}))
+            with mock.patch.object(collections, "sources", return_value={"space": {"list": "space-walls.txt"}}):
+                self.assertEqual(collections.import_review(stick, say=lambda *a: None), 0)
+            r = load_review()
+            self.assertEqual(r["keep"], {"space/a.jpg", "space/b.jpg"}, "a.jpg was kept here: that wins")
+            self.assertEqual(r["drop"], {"space/c.jpg"})
+            self.assertFalse((home / "Pictures/walls/space/c.jpg").exists())
+            self.assertTrue((home / "Pictures/walls/space/d.jpg").exists(), "undecided pictures stay")
+
     def test_space_list_is_pinned(self):
         entries = collections.list_entries("space-walls.txt")
         self.assertGreater(len(entries), 50)

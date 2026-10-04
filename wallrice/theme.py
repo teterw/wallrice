@@ -31,7 +31,9 @@ def derive(palette, brand=BRAND):
         bg = mix(bg, BLACK, 0.6)
     while luminance(bg) > 0.03:
         bg = mix(bg, BLACK, 0.2)
-    fg = toward(hex2rgb(palette["foreground"]), WHITE, bg, 7.0)
+    fh, fl, fs = hls(hex2rgb(palette["foreground"]))
+    fg = from_hls(fh, max(fl, 0.82), min(fs, 0.3))  # text near white, with only a tint of the picture
+    fg = toward(fg, WHITE, bg, 7.0)
 
     candidates = [palette.get(f"color{i}") for i in (*range(1, 7), *range(9, 15))]
     candidates = [hex2rgb(c) for c in candidates if c]
@@ -41,6 +43,8 @@ def derive(palette, brand=BRAND):
         accent = brand
     elif s < 0.25:  # low-colour wallpaper: give the accent some life without changing its hue
         accent = from_hls(h, max(l, 0.55), 0.45)
+    h, l, s = hls(accent)  # a dark accent gets lighter in its own colour (mixing in white would grey it)
+    accent = from_hls(h, min(max(l, 0.5), 0.78), s)
     accent = toward(accent, WHITE, bg, 3.0)
     on_accent = BLACK if contrast(accent, BLACK) >= contrast(accent, WHITE) else WHITE
     term = []

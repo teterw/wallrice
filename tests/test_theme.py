@@ -34,6 +34,24 @@ class Derive(unittest.TestCase):
         self.assertGreaterEqual(s, 0.25, "a grey wallpaper still gets an accent with some colour")
         self.assertTrue(0.68 < h < 0.78, f"no hue to keep, so the accent is violet, not red (hue {h:.2f})")
 
+    def test_dark_accent_keeps_its_colour(self):
+        """A dark, saturated brown becomes a lighter brown, not a washed-out grey."""
+        from helpers import palette as pal
+        c = theme.derive(pal("#120a06", "#e0d8d0", ["#120a06", "#3a2516", "#2e2420", "#332820", "#2a221e", "#30261f", "#28201b", "#d0c8c0"] * 2))
+        _h, l, s = hls(c["accent"])
+        self.assertGreater(s, 0.3, "still clearly coloured")
+        self.assertGreaterEqual(l, 0.45)
+        self.assertGreaterEqual(contrast(c["accent"], c["bg"]), 3.0)
+
+    def test_text_is_near_white_not_neon(self):
+        """A saturated foreground (an ocean picture's light cyan) still gives calm, near-white text."""
+        from helpers import palette as pal
+        c = theme.derive(pal("#081554", "#52f4fe", ["#081554", "#2d98b2", "#52f4fe", "#1b6ca8", "#3fa7d6", "#0e4d92", "#81e8ff", "#c8f8ff"] * 2))
+        _h, l, s = hls(c["fg"])
+        self.assertLessEqual(s, 0.31)
+        self.assertGreaterEqual(l, 0.8)
+        self.assertGreaterEqual(contrast(c["fg"], c["bg"]), 7.0)
+
     def test_grey_wallpaper_terminal_still_has_colours(self):
         """Grey slots become ANSI-like colours, so errors and successes still look different."""
         c = theme.derive(GREY)

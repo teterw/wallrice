@@ -12,6 +12,7 @@
   wallrice walls update [--background]  download or update the wallpaper collections
   wallrice walls review               keep or remove each picture; removed ones stay gone
   wallrice walls status               what's downloaded, kept and removed
+  wallrice walls import FILE          take Keep/Remove choices from another review.json (e.g. the stick's)
   wallrice status                     current wallpaper and settings
   wallrice doctor                     what was detected, which pieces are active, what's missing
 
@@ -80,6 +81,10 @@ def cmd_walls(args):
             return 0
         collections.update()
         return 0
+    if args.what == "import":
+        if not args.file:
+            return die("walls import FILE")
+        return collections.import_review(args.file)
     if args.what == "review":
         try:
             from .ui import review
@@ -203,7 +208,8 @@ def parser():
     an = sub.add_parser("animations")
     an.add_argument("onoff", choices=("on", "off"))
     w = sub.add_parser("walls", help="wallpaper collections")
-    w.add_argument("what", choices=("update", "review", "status"))
+    w.add_argument("what", choices=("update", "review", "status", "import"))
+    w.add_argument("file", nargs="?", help="import: the review.json to take choices from")
     w.add_argument("--background", action="store_true", help="update: download detached, with a log")
     sub.add_parser("status")
     sub.add_parser("doctor")

@@ -83,6 +83,14 @@ def main():
             p.wait(timeout=20)
         time.sleep(2)
         shot("final")
+        picker = subprocess.Popen([*WALLRICE, "pick"], env={**env, "WAYLAND_DISPLAY": sock.name, "GDK_BACKEND": "wayland"}) \
+            if sock else None
+        if picker:
+            time.sleep(0.25)
+            shot("picker-opening")
+            time.sleep(4)
+            shot("picker")
+            picker.terminate()
         if window:
             window.terminate()
         return 0

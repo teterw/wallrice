@@ -46,6 +46,9 @@ export default class WallriceExtension extends Extension {
         this._timelines = new Set();
 
         this._patchBackground();
+        // the picker opens and closes with its own zoom: the Shell's window animations would get in
+        // the way of the seamless hand-over to the desktop
+        global.display.connectObject('window-created', (_d, win) => this._skipEffects(win), this);
         this._bar = new Bar(args => this._runWallrice(args));
         this._bar.enable();
         this._dock = new Dock();
@@ -68,6 +71,7 @@ export default class WallriceExtension extends Extension {
     }
 
     disable() {
+        global.display.disconnectObject(this);
         if (this._startupId)
             Main.layoutManager.disconnect(this._startupId);
         this._startupId = 0;
@@ -167,6 +171,19 @@ export default class WallriceExtension extends Extension {
         if (this._originalSwap)
             Background.BackgroundManager.prototype._swapBackgroundActor = this._originalSwap;
         this._originalSwap = null;
+    }
+
+    _skipEffects(win) {
+        const ids = [win.get_gtk_application_id?.(), win.get_wm_class?.(), win.get_wm_class_instance?.()];
+        if (!ids.some(id => id && id.startsWith('wallrice-picker')))
+            return;
+        const skip = () => {
+            const actor = win.get_compositor_private();
+            if (actor)
+                Main.wm.skipNextEffect(actor);
+        };
+        skip();  // the map animation
+        win.connectObject('unmanaging', skip, this);  // and the close animation
     }
 
     // ---------------------------------------------------------------- stylesheet and settings

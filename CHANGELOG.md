@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.5.1: polish
+
+- `wallrice walls import FILE`: take Keep/Remove choices from another review.json, such as Chiron
+  Stick's `walls-review.json`. Choices already made here win; removed pictures leave the disk.
+- GNOME: the extension skips the Shell's window animations for the picker, so its own zoom hands over
+  to the desktop seamlessly.
+- Colours: text is near-white with only a tint of the picture (a saturated foreground no longer gives
+  neon text), and a dark accent is lightened in its own colour instead of being greyed by white.
+
 ## v0.5.0: every common desktop
 
 - Backends for KDE Plasma, Xfce, Cinnamon, MATE, LXQt, wlroots compositors (Hyprland, Sway, river, …)
