@@ -2,7 +2,6 @@
 backups that uninstall can restore, Super+W next to the user's own shortcuts."""
 import json
 import unittest
-from pathlib import Path
 from unittest import mock
 
 from fakes import FakeRun, tools

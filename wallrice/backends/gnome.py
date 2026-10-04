@@ -60,6 +60,13 @@ class Gnome(Backend):
             return name[-1]
         return None
 
+    def current_wallpaper(self):
+        uri = gv_strip(self.read(f"{BG}/picture-uri-dark")) or gv_strip(self.read(f"{BG}/picture-uri"))
+        if uri and uri.startswith("file://"):
+            from urllib.parse import unquote, urlparse
+            return Path(unquote(urlparse(uri).path))
+        return None
+
     def ptyxis_profiles(self):
         if not self.env.has("ptyxis"):
             return []

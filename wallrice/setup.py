@@ -90,7 +90,27 @@ def install(dry_run=False, say=print):
     set_rotation(st.get("rotate_minutes", 30), dry_run, say)
     if env.has("update-desktop-database") and not dry_run:
         run("update-desktop-database", str(apps_dir))
+    first_theme(be, st, dry_run, say)
     return be
+
+
+def first_theme(be, st, dry_run=False, say=print):
+    """Theme the desktop from the wallpaper it shows now, so it matches straight after installing."""
+    from . import collections, engine
+    if st.get("wallpaper") and Path(st["wallpaper"]).is_file():
+        return
+    img = be.current_wallpaper()
+    if not img or not img.is_file() or img.suffix.lower() not in engine.IMAGE_EXT:
+        img = collections.pick_random(st.get("mode", "all"))
+    if not img:
+        say("no wallpaper to start from yet: run  wallrice walls update")
+        return
+    say(f"first theme from {img}")
+    if not dry_run:
+        try:
+            engine.apply(img, effect="none", backend=be)
+        except engine.ApplyError as e:
+            say(f"couldn't theme from {img.name}: {e}")
 
 
 def uninstall(dry_run=False, say=print):

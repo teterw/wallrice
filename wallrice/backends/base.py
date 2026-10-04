@@ -38,6 +38,10 @@ class Backend:
         """The A/B slot in use right now, read from the desktop, or None."""
         return None
 
+    def current_wallpaper(self):
+        """The picture the desktop shows now (before wallrice ran), or None."""
+        return None
+
     def outputs(self, ctx):
         """Extra files this desktop needs: {path: text}. Must not change anything."""
         return {}

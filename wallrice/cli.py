@@ -47,11 +47,18 @@ def cmd_random(_args, avoid=True):
     return apply(img)
 
 
-def cmd_next(args):
+def cmd_next(_args):
+    """Timer tick: only downloaded collections rotate, never the distro's default wallpapers."""
     st = load_state()
     if st.get("paused"):
         return 0
-    return cmd_random(args)
+    pics = [p for p in collections.wallpapers(st.get("mode", "all")) if collections.in_walls(p)]
+    if st.get("wallpaper") and len(pics) > 1:
+        pics = [p for p in pics if str(p) != st["wallpaper"]]
+    if not pics:
+        return 0
+    import random
+    return apply(random.choice(pics))
 
 
 def cmd_pick(_args):
