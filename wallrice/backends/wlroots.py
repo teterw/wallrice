@@ -33,6 +33,8 @@ class Wlroots(Backend):
     def outputs(self, ctx):
         hx = hexes(ctx.theme)
         files = gtk_settings_files(ctx)
+        if not ctx.on("apps"):  # window borders are part of the apps' colours
+            return files
         hl = "".join(f"$wr_{k} = rgb({v[1:]})\n" for k, v in hx.items())
         files[paths.config_home() / "hypr" / "wallrice.conf"] = (
             f"# {HEADER}\n# in hyprland.conf:  source = ~/.config/hypr/wallrice.conf\n{hl}"
@@ -93,8 +95,11 @@ class Wlroots(Backend):
     def activate(self, ctx):
         hx = hexes(ctx.theme)
         steps = []
-        if self.env.has("dconf"):
-            steps.append(("GTK apps", lambda: self.load(dconf_interface_keys(ctx))))
+        keys = dconf_interface_keys(ctx)
+        if keys and self.env.has("dconf"):
+            steps.append(("GTK apps", lambda: self.load(keys)))
+        if not ctx.on("apps"):
+            return steps
         if self.wm == "hyprland" and self.env.has("hyprctl"):
             steps.append(("Hyprland borders", lambda: (
                 self.run("hyprctl", "keyword", "general:col.active_border", f"rgb({hx['accent'][1:]})"),

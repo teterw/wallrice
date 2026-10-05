@@ -102,6 +102,30 @@ def restore_where(match, writer, say=None):
     return len(keys)
 
 
+def restore_files_where(match, say=None):
+    """Put back the originals of the files `match(path)` picks (a copy, or removal of wallrice's own
+    file where there was none), and forget them. Returns how many."""
+    m = load()
+    picked = [k for k in m["files"] if match(k)]
+    n = 0
+    for orig in sorted(picked):
+        copy = m["files"].pop(orig)
+        p = Path(orig)
+        if copy is None:
+            if p.is_file() and ours(p):
+                p.unlink()
+                n += 1
+        elif Path(copy).is_file():
+            p.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(copy, p)
+            n += 1
+        if say:
+            say(f"restore {p}")
+    if picked:
+        save(m)
+    return n
+
+
 def restore(dry_run=False, say=print, writer=None):
     """Put every recorded original back. `writer(key, value)` restores a setting (the backend's;
     plain dconf by default). Returns the number of things restored."""

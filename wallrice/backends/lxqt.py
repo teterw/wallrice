@@ -37,10 +37,12 @@ class Lxqt(Backend):
                    "text_color": rgb2hex(th["fg"]), "link_color": rgb2hex(th["accent"]),
                    "link_visited_color": rgb2hex(th["muted"])}
         conf = lxqt_conf()
-        text = ini_update(conf, "Palette", palette)
+        text = conf.read_text(encoding="utf-8") if conf.is_file() else ""
+        if ctx.on("apps"):
+            text = ini_set(text, "Palette", palette)
         if ctx.icons:
             text = ini_set(text, "General", {"icon_theme": icons.theme_name(ctx.slot)})
-        files = {conf: text}
+        files = {conf: text} if (ctx.on("apps") or ctx.icons) else {}
         files.update(gtk_settings_files(ctx))
         return files
 
@@ -52,7 +54,8 @@ class Lxqt(Backend):
         return OVERLAY_HALF if started else 0.0
 
     def activate(self, ctx):
-        return [("GTK apps", lambda: self.load(dconf_interface_keys(ctx)))] if self.env.has("dconf") else []
+        keys = dconf_interface_keys(ctx)
+        return [("GTK apps", lambda: self.load(keys))] if keys and self.env.has("dconf") else []
 
     def finish(self):
         self.overlay.finish()

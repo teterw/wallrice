@@ -38,10 +38,30 @@ card's ✕) removes a wallpaper for good, with **Ctrl+Z** to undo.
 | Dock | Dash to Dock / Ubuntu Dock background and running dots |
 | Other apps | btop, rofi, wofi, fuzzel and waybar colour files (`wallrice doctor` shows the line to include them) |
 
-Don't want your terminal recoloured? `wallrice terminal off` keeps your terminals' own colours for good
-(saved; every later wallpaper change leaves them alone, while the rest of the desktop still follows):
-Ptyxis gets its original palette back and open terminals are reset. `wallrice terminal on` brings the
-wallpaper's colours back, straight away.
+### Turning parts on and off
+
+Every part of the theme can be switched off and on again, and the choice is saved: later wallpaper
+changes (the picker, the timer, `random`) leave a part that's off alone, while the rest keeps
+following the wallpaper. Off puts that part's original look back straight away (from the backup made
+before wallrice first changed it); on themes it from the current wallpaper straight away.
+
+```
+wallrice parts                           what's on and off
+wallrice off taskbar-icons terminal      e.g. colourful app icons again, and your terminal's own palette
+wallrice on taskbar-icons                back to flat monochrome icons
+wallrice off all  /  wallrice on all     everything at once (the wallpaper itself still changes)
+```
+
+| Part | What it is |
+|---|---|
+| `apps` | GTK and libadwaita app colours, and the accent colour |
+| `icons` | folder icons in the accent colour |
+| `terminal` | terminal colours (open terminals are reset when it goes off) |
+| `dock` | the dock / taskbar in the theme's colours (GNOME) |
+| `taskbar-icons` | flat monochrome app icons in the dock / taskbar and the top bar (GNOME) |
+| `topbar` | the islands top bar; off gives GNOME's own bar back, live |
+| `transitions` | animated wallpaper changes |
+| `rotation` | a new wallpaper on a timer |
 
 Colours are contrast-checked (WCAG): background always dark, text at 7:1 or more, accent at 3:1, muted
 text and terminal colours at 4.5:1. Grey wallpapers get a violet accent (`#8b5cf6`). Palettes come
@@ -102,7 +122,10 @@ wallrice rotate off|MINUTES         change the wallpaper on a timer (default 30)
 wallrice pause | resume             no rotation and no animations while the machine is busy
 wallrice animations on|off          animated wallpaper changes
 wallrice bar [STYLE|mono|colour]    top bar style with a live preview (GNOME); dock icon colours
-wallrice terminal [on|off]          whether terminals take the wallpaper's colours too (saved)
+wallrice parts                      every part of the theme, and whether it's on
+wallrice off PART… | all            a part keeps (or gets back) its own look, saved
+wallrice on PART… | all             it follows the wallpaper again
+wallrice terminal [on|off]          the same as  wallrice on|off terminal
 wallrice walls update [--background]  download or update the wallpaper collections
 wallrice walls review               keep or remove each picture; removed ones stay gone
 wallrice walls status               what's downloaded, kept and removed

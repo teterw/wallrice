@@ -9,7 +9,11 @@
   wallrice pause | resume             no rotation and no animations while the machine is busy
   wallrice animations on|off          animated wallpaper changes
   wallrice bar [STYLE|mono|colour]    top bar style, with a live preview (GNOME); dock icon colours
-  wallrice terminal [on|off]          whether terminals take the wallpaper's colours too (saved)
+  wallrice parts                      every part of the theme, and whether it's on
+  wallrice off PART… | all            a part keeps (or gets back) its own look, saved: apps, icons,
+                                      terminal, dock, taskbar-icons, topbar, transitions, rotation
+  wallrice on PART… | all             it follows the wallpaper again, from the one on show
+  wallrice terminal [on|off]          the same as  wallrice on|off terminal
   wallrice walls update [--background]  download or update the wallpaper collections
   wallrice walls review               keep or remove each picture; removed ones stay gone
   wallrice walls status               what's downloaded, kept and removed
@@ -23,7 +27,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import __version__, collections, doctor, engine, setup
+from . import __version__, backends, collections, doctor, engine, parts, setup
 from .state import load_state, update_state
 
 EFFECTS = (*engine.EFFECTS, "random", "none")
@@ -117,9 +121,17 @@ def cmd_rotate(args):
             minutes = int(args.minutes.rstrip("m"))
         except ValueError:
             return die("rotate off|MINUTES")
-    update_state(rotate_minutes=minutes)
+    if minutes:
+        update_state(rotate_minutes=minutes, rotation=True)
+    else:
+        update_state(rotation=False)
     setup.set_rotation(minutes if not load_state().get("paused") else 0)
     return 0
+
+
+def rotation_minutes(st):
+    """How often to rotate now: 0 when the rotation part is off."""
+    return (st.get("rotate_minutes") or 30) if parts.is_on(st, "rotation") else 0
 
 
 def cmd_pause(args):
@@ -129,7 +141,7 @@ def cmd_pause(args):
         print("already " + ("paused" if paused else "running"))
         return 0
     update_state(paused=paused)
-    setup.set_rotation(0 if paused else st.get("rotate_minutes", 30), say=lambda *a: None)
+    setup.set_rotation(0 if paused else rotation_minutes(st), say=lambda *a: None)
     print("paused: no rotation, no animations" if paused else "resumed")
     return 0
 
@@ -139,7 +151,7 @@ def set_bar(name):
     from . import barstyles
     from .backends import gnome
     if name in ("mono", "colour", "color"):
-        st = update_state(dock_mono=name == "mono")
+        return set_parts("on" if name == "mono" else "off", ["taskbar-icons"])
     else:
         style = barstyles.get(name)
         if style.id != name and not (name.isdigit() and 1 <= int(name) <= len(barstyles.STYLES)):
@@ -163,7 +175,7 @@ def cmd_bar(args):
 
 def cmd_terminal(args):
     if not args.onoff:
-        on = load_state().get("terminal_colors", True)
+        on = parts.is_on(load_state(), "terminal")
         print(f"terminal colours: {'on' if on else 'off'}  (wallrice terminal {'off' if on else 'on'} to change)")
         return 0
     if args.onoff == "on":
@@ -179,8 +191,46 @@ def cmd_terminal(args):
 
 
 def cmd_animations(args):
-    update_state(animations=args.onoff == "on")
-    print(f"animations {args.onoff}")
+    return set_parts(args.onoff, ["transitions"])
+
+
+def set_parts(onoff, names):
+    """`wallrice on|off PART…` (or all)."""
+    if not names:
+        return die(f"wallrice {onoff} PART… or  wallrice {onoff} all   (see  wallrice parts)", 2)
+    if [n.lower() for n in names] == ["all"]:
+        picked = [p.name for p in parts.PARTS]
+    else:
+        picked = []
+        for n in names:
+            part = parts.resolve(n)
+            if part is None:
+                return die(f"no part called {n}. Parts: {', '.join(p.name for p in parts.PARTS)}, or all", 2)
+            if part.name not in picked:
+                picked.append(part.name)
+    if onoff == "on":
+        notes = engine.part_on(picked)
+        print(f"on: {', '.join(picked)}")
+        for n in notes:
+            print(f"  note: {n}")
+    else:
+        n = engine.part_off(picked)
+        print(f"off: {', '.join(picked)}" + (f"  ({n} setting{'s' if n != 1 else ''} and files put back)" if n else ""))
+    return 0
+
+
+def cmd_onoff(args):
+    return set_parts(args.cmd, args.parts)
+
+
+def cmd_parts(_args):
+    from . import detect
+    be_parts = backends.get(detect.detect()).parts
+    st = load_state()
+    print("wallrice parts (wallrice on|off PART…, or all):")
+    for p in parts.PARTS:
+        here = "" if p.name in be_parts else "  (not on this desktop)"
+        print(f"  {'on ' if parts.is_on(st, p) else 'off'}  {p.name:14} {p.about}{here}")
     return 0
 
 
@@ -195,12 +245,12 @@ def cmd_login(_args):
     st = load_state()
     if st.get("paused"):
         update_state(paused=False)
-        setup.set_rotation(st.get("rotate_minutes", 30), say=lambda *a: None)
-    if not setup.has_systemd() and st.get("rotate_minutes"):
+        setup.set_rotation(rotation_minutes(st), say=lambda *a: None)
+    if not setup.has_systemd() and rotation_minutes(st):
         import time
         while True:  # rotation without systemd
-            time.sleep(st["rotate_minutes"] * 60)
-            if not load_state().get("paused"):
+            time.sleep(rotation_minutes(st) * 60)
+            if not load_state().get("paused") and parts.is_on(load_state(), "rotation"):
                 cmd_random(None)
     return 0
 
@@ -221,6 +271,10 @@ def parser():
     r.add_argument("minutes")
     sub.add_parser("pause")
     sub.add_parser("resume")
+    for name in ("on", "off"):
+        o = sub.add_parser(name, help=f"turn parts {name} (wallrice parts lists them)")
+        o.add_argument("parts", nargs="*")
+    sub.add_parser("parts", help="every part and whether it's on")
     t = sub.add_parser("terminal", help="terminal colours on or off")
     t.add_argument("onoff", nargs="?", choices=("on", "off"))
     b = sub.add_parser("bar", help="top bar style")
@@ -233,10 +287,10 @@ def parser():
     w.add_argument("--background", action="store_true", help="update: download detached, with a log")
     sub.add_parser("status")
     sub.add_parser("doctor")
-    sub.add_parser("login", help=argparse.SUPPRESS)
-    sub.add_parser("thumbs", help=argparse.SUPPRESS)
+    sub.add_parser("login")  # internal: no help, so not listed
+    sub.add_parser("thumbs")
     for name in ("setup", "teardown"):
-        s = sub.add_parser(name, help=argparse.SUPPRESS)
+        s = sub.add_parser(name)
         s.add_argument("--dry-run", action="store_true")
     return p
 
@@ -264,5 +318,5 @@ def main(argv=None):
     handlers = {"pick": cmd_pick, "random": cmd_random, "next": cmd_next, "walls": cmd_walls, "mode": cmd_mode,
                 "rotate": cmd_rotate, "pause": cmd_pause, "resume": cmd_pause, "animations": cmd_animations,
                 "status": cmd_status, "login": cmd_login, "bar": cmd_bar,
-                "terminal": cmd_terminal}
+                "terminal": cmd_terminal, "on": cmd_onoff, "off": cmd_onoff, "parts": cmd_parts}
     return handlers[cmd](args)

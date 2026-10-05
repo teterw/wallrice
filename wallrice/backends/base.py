@@ -19,12 +19,17 @@ class Context:
     icons: dict = None        # the Papirus overlay plan, when Papirus is installed
     notes: list = field(default_factory=list)
     settle: float = 0.0       # seconds after apply() returns until the desktop fully shows the picture
-    terminals: bool = True    # recolour terminals too (`wallrice terminal on|off`)
+    parts: dict = field(default_factory=dict)  # {part: on?} (`wallrice on|off PART`); missing = on
     term_slot: str = "a"      # the A/B copy of the terminal palette not in use
+
+    def on(self, part):
+        return self.parts.get(part, True)
 
 
 class Backend:
     name = "generic"
+    # the parts (wallrice.parts) this desktop has; GNOME adds its dock, taskbar icons and top bar
+    parts = {"apps", "icons", "terminal", "transitions", "rotation"}
     # what this backend does live, for `wallrice doctor`
     features = {"wallpaper": None, "live colours": None, "transition": None, "Super+W": None}
 
@@ -60,9 +65,11 @@ class Backend:
         """Live steps that recolour this desktop's own terminal: [(label, callable)]."""
         return []
 
-    def is_terminal_setting(self, key):
-        """Whether a backed-up setting belongs to the terminal (restored by `wallrice terminal off`)."""
-        return False
+    def part_of(self, key):
+        """The part a backed-up setting belongs to (restored by `wallrice off PART`), or None."""
+        if key.startswith("/org/gnome/desktop/interface/"):  # GTK apps' settings, on several desktops
+            return "icons" if key.endswith("/icon-theme") else "apps"
+        return None
 
     # Backups: settings are named by keys. dconf keys are paths ("/org/..."); backends with other
     # settings stores use their own prefixes ("xfconf:CHANNEL:PROP", "kde:...") and override these.

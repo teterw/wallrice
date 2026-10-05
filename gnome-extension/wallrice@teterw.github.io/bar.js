@@ -94,9 +94,10 @@ class WallriceWorkspaces extends PanelMenu.Button {
 
 const Launchers = GObject.registerClass(
 class WallriceLaunchers extends PanelMenu.Button {
-    _init(wallrice) {
+    _init(wallrice, mono) {
         super._init(0.0, 'wallrice launchers', true);
         this._wallrice = wallrice;
+        this._mono = mono;
         this._box = new St.BoxLayout({style_class: 'wallrice-launchers', y_align: Clutter.ActorAlign.CENTER});
         this.add_child(this._box);
         this._favs = AppFavorites.getAppFavorites();
@@ -116,18 +117,25 @@ class WallriceLaunchers extends PanelMenu.Button {
         return b;
     }
 
+    setMono(mono) {
+        if (mono === this._mono)
+            return;
+        this._mono = mono;
+        this._build();
+    }
+
     _build() {
         this._box.destroy_all_children();
         for (const app of this._favs.getFavorites().slice(0, 3)) {
-            // flat monochrome: the app's symbolic icon when the icon theme has one, else its own
+            // flat monochrome (taskbar-icons on): the app's symbolic icon when the icon theme has one
             const name = app.app_info?.get_icon()?.to_string?.() ?? '';
-            const gicon = name && !name.includes('/')
+            const gicon = this._mono && name && !name.includes('/')
                 ? Gio.ThemedIcon.new_from_names([`${name}-symbolic`, name])
                 : app.get_icon();
             this._box.add_child(this._button(gicon, null, () => app.activate(), app.get_name()));
         }
-        this._box.add_child(this._button(null, 'preferences-desktop-wallpaper-symbolic',
-            () => this._wallrice('pick'), 'Wallpapers'));
+        this._box.add_child(this._button(null, this._mono ? 'preferences-desktop-wallpaper-symbolic'
+            : 'preferences-desktop-wallpaper', () => this._wallrice('pick'), 'Wallpapers'));
     }
 
 });
@@ -273,9 +281,15 @@ class WallriceBell extends PanelMenu.Button {
 });
 
 export class Bar {
-    constructor(runWallrice) {
+    constructor(runWallrice, mono = true) {
         this._run = runWallrice;
+        this._mono = mono;
         this._items = [];
+    }
+
+    setMono(mono) {
+        this._mono = mono;
+        this._launchers?.setMono(mono);
     }
 
     enable() {
@@ -284,7 +298,8 @@ export class Bar {
         this._activities = panel.statusArea.activities;
         this._activities?.container.hide();
         this._add('wallrice-workspaces', new Workspaces(), 0, 'left');
-        this._add('wallrice-launchers', new Launchers(this._run), 1, 'left');
+        this._launchers = new Launchers(this._run, this._mono);
+        this._add('wallrice-launchers', this._launchers, 1, 'left');
 
         // the clock moves to the right; the window title takes the centre
         const dm = panel.statusArea.dateMenu;
@@ -311,6 +326,7 @@ export class Bar {
         const panel = Main.panel;
         this._items.forEach(b => b.destroy());
         this._items = [];
+        this._launchers = null;
         const dm = panel.statusArea.dateMenu;
         if (dm && this._dmParent) {
             const c = dm.container;

@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.7.0: every part on or off
+
+- `wallrice off PART…` / `wallrice on PART…` / `wallrice off all` / `wallrice on all`, and
+  `wallrice parts` to see them: apps, icons, terminal, dock, taskbar-icons, topbar, transitions and
+  rotation. Each choice is saved and respected by every later wallpaper change; the wallpaper itself
+  always changes.
+- Off puts that part's originals back from the backup at once (GTK theme, accent, gtk.css, icon
+  theme, terminal palette, dock colours) and forgets them there; on themes it from the current
+  wallpaper at once.
+- GNOME, live: `topbar` off gives GNOME's own top bar back, `taskbar-icons` off gives the dock and
+  the top bar's launchers their colourful icons, `dock` off drops the dock's theme colours.
+- The picker's desktop mock draws what's on (stock bar, colourful dock icons).
+- The older commands are shortcuts onto the parts: `terminal on|off`, `animations on|off`,
+  `bar mono|colour`, `rotate off|MINUTES` (rotate off now remembers the interval for `on`).
+
 ## v0.6.0: terminal colours on or off
 
 - `wallrice terminal on|off` (no argument shows which): whether terminals take the wallpaper's colours.

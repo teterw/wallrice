@@ -81,18 +81,27 @@ class Xfce(Backend):
         return None
 
     def settings_touched(self, ctx):
-        keys = ["xfconf:xsettings:/Net/ThemeName", "xfconf:xsettings:/Net/IconThemeName"]
-        keys += [f"xfconf:xfce4-desktop:{p}" for p in self.wallpaper_props()]
-        if self.env.has("xfce4-terminal") and ctx.terminals:
+        keys = [f"xfconf:xfce4-desktop:{p}" for p in self.wallpaper_props()]
+        if ctx.on("apps"):
+            keys.append("xfconf:xsettings:/Net/ThemeName")
+        if ctx.icons:
+            keys.append("xfconf:xsettings:/Net/IconThemeName")
+        if self.env.has("xfce4-terminal") and ctx.on("terminal"):
             keys += [f"xfconf:xfce4-terminal:/{k}" for k in ("color-use-theme", "color-foreground", "color-background",
                                                               "color-cursor", "color-palette")]
         return keys
 
-    def is_terminal_setting(self, key):
-        return key.startswith("xfconf:xfce4-terminal:")
+    def part_of(self, key):
+        if key.startswith("xfconf:xfce4-terminal:"):
+            return "terminal"
+        if key == "xfconf:xsettings:/Net/ThemeName":
+            return "apps"
+        if key == "xfconf:xsettings:/Net/IconThemeName":
+            return "icons"
+        return super().part_of(key)
 
     def terminal_steps(self, ctx):
-        if not (ctx.terminals and self.env.has("xfce4-terminal")):
+        if not (ctx.on("terminal") and self.env.has("xfce4-terminal")):
             return []
         return [("xfce4-terminal", lambda: self.terminal(ctx.theme))]
 
@@ -101,6 +110,8 @@ class Xfce(Backend):
     def gtk_css(self, ctx):
         """The panel and notifications in the theme's colours (islands need the panel layout, so the
         panel just gets the colours here)."""
+        if not ctx.on("apps"):
+            return ""
         hx = hexes(ctx.theme)
         return (f"#XfcePanelWindow {{ background-color: alpha({hx['bg']}, 0.92); }}\n"
                 f"#XfcePanelWindow, #XfcePanelWindow label, #XfcePanelWindow button {{ color: {hx['fg']}; }}\n"
@@ -118,7 +129,9 @@ class Xfce(Backend):
         return OVERLAY_HALF if started else 0.0
 
     def activate(self, ctx):
-        steps = [("GTK theme", lambda: self.set("xsettings", "/Net/ThemeName", gtk.theme_name(ctx.slot)))]
+        steps = []
+        if ctx.on("apps"):
+            steps.append(("GTK theme", lambda: self.set("xsettings", "/Net/ThemeName", gtk.theme_name(ctx.slot))))
         if ctx.icons:
             steps.append(("icons", lambda: self.set("xsettings", "/Net/IconThemeName", icons.theme_name(ctx.slot))))
         return steps + self.terminal_steps(ctx)

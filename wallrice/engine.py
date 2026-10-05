@@ -10,7 +10,7 @@ import shutil
 import time
 from pathlib import Path
 
-from . import backends, backup, detect, palette, paths
+from . import backends, backup, detect, palette, parts, paths
 from .color import rgb2hex
 from .render import apps, gtk, icons, terminals
 from .sh import run
@@ -33,11 +33,12 @@ def render_all(ctx, backend):
     """Every output, in memory: ({path: text}, icon plan). Raises if anything can't be made."""
     th, env, slot = ctx.theme, ctx.env, ctx.slot
     files = {}
-    files.update(gtk.outputs(th, slot, extra=backend.gtk_css(ctx)))
-    if ctx.terminals:
+    if ctx.on("apps"):
+        files.update(gtk.outputs(th, slot, extra=backend.gtk_css(ctx)))
+        files.update(apps.outputs(th, env))
+    if ctx.on("terminal"):
         files.update(terminals.outputs(th, env, ctx.term_slot))
-    files.update(apps.outputs(th, env))
-    plan = icons.plan(th["accent"], slot)
+    plan = icons.plan(th["accent"], slot) if ctx.on("icons") else None
     if plan:
         files.update(plan["files"])
     files.update(backend.outputs(ctx))
@@ -69,7 +70,8 @@ def apply(img, effect="random", quiet=False, env=None, backend=None):
     env = env or detect.detect()
     backend = backend or backends.get(env)
     state = load_state()
-    if state.get("paused") or not state.get("animations", True):
+    on = parts.enabled(state)
+    if state.get("paused") or not on["transitions"]:
         effect = "none"
     old = Path(state["wallpaper"]) if state.get("wallpaper") else None
     try:
@@ -78,10 +80,10 @@ def apply(img, effect="random", quiet=False, env=None, backend=None):
         raise ApplyError(str(e)) from e
     th = derive(pal)
     slot = other(backend.current_slot() or state.get("slot") or "b")
-    term_on = bool(state.get("terminal_colors", True))
+    term_on = on["terminal"]
     term_slot = other(backend.current_term_slot() or state.get("term_slot") or "b")
     ctx = backends.Context(img=img, theme=th, slot=slot, env=env, effect=effect, old=old,
-                           terminals=term_on, term_slot=term_slot)
+                           parts=on, term_slot=term_slot)
     files, plan = render_all(ctx, backend)
     ctx.icons = plan
 
@@ -115,44 +117,62 @@ def apply(img, effect="random", quiet=False, env=None, backend=None):
     return ctx
 
 
-def terminals_on(env=None, backend=None):
-    """`wallrice terminal on`: from now on terminals follow the wallpaper too, starting with the one on
-    show (only the terminals change; the rest of the desktop is already themed)."""
-    update_state(terminal_colors=True)
-    env = env or detect.detect()
-    backend = backend or backends.get(env)
-    state = load_state()
-    img = Path(state["wallpaper"]) if state.get("wallpaper") else None
-    if not img or not img.is_file():
-        return []  # nothing applied yet: the next wallpaper brings the colours
-    th = derive(palette.extract(img))
-    term_slot = other(backend.current_term_slot() or state.get("term_slot") or "b")
-    ctx = backends.Context(img=img, theme=th, slot=state.get("slot") or "a", env=env, effect="none",
-                           terminals=True, term_slot=term_slot)
-    files = terminals.outputs(th, env, term_slot)
-    keys = [k for k in backend.settings_touched(ctx) if backend.is_terminal_setting(k)]
-    backup.record(files, keys, reader=backend.read_setting)
-    for path, text in files.items():
-        write_atomic(path, text)
+# Files that belong to a part (besides wallrice's own): their originals come back when it's turned off
+FILE_PARTS = {"gtk-4.0/gtk.css": "apps", "gtk-3.0/settings.ini": "apps", "gtk-4.0/settings.ini": "apps",
+              "lxqt/lxqt.conf": "apps"}
+
+
+def file_part(path):
+    return next((part for tail, part in FILE_PARTS.items() if str(path).endswith(tail)), None)
+
+
+def part_on(names, env=None, backend=None):
+    """`wallrice on PART…`: these parts follow the wallpaper again, starting with the one on show.
+    Returns notes about anything that couldn't be done."""
+    names = [names] if isinstance(names, str) else list(names)
+    st = update_state(**{parts.BY_NAME[n].key: True for n in names})
     notes = []
-    for label, step in backend.terminal_steps(ctx) + [("open terminals", lambda: terminals.send_osc(th))]:
-        try:
-            step()
-        except Exception as e:  # noqa: BLE001
-            notes.append(f"{label}: {e}")
-    update_state(term_slot=term_slot)
+    if "rotation" in names:
+        from . import setup
+        setup.set_rotation(st.get("rotate_minutes") or 30, say=lambda *a: None)
+    if set(names) - {"rotation", "transitions"}:
+        img = Path(st["wallpaper"]) if st.get("wallpaper") else None
+        if img and img.is_file():
+            ctx = apply(img, effect="none", quiet=True, env=env, backend=backend)
+            notes += ctx.notes
     return notes
 
 
-def terminals_off(env=None, backend=None):
-    """`wallrice terminal off`: terminals keep their own colours. The terminal's original settings
-    come back from the backup, and open terminals are reset to their own colours."""
-    update_state(terminal_colors=False)
+def part_off(names, env=None, backend=None):
+    """`wallrice off PART…`: these parts keep (or get back) their own look. Their original settings come
+    back from the backup and are forgotten there, so they're recorded afresh when turned on again.
+    Returns how many settings and files were put back."""
+    names = [names] if isinstance(names, str) else list(names)
+    st = update_state(**{parts.BY_NAME[n].key: False for n in names})
     env = env or detect.detect()
     backend = backend or backends.get(env)
-    restored = backup.restore_where(backend.is_terminal_setting, writer=backend.restore_setting)
-    terminals.send_reset()
-    return restored
+    picked = set(names)
+    n = backup.restore_where(lambda k: backend.part_of(k) in picked, writer=backend.restore_setting)
+    n += backup.restore_files_where(lambda p: file_part(p) in picked)
+    if "terminal" in picked:
+        terminals.send_reset()
+    if "rotation" in picked:
+        from . import setup
+        setup.set_rotation(0, say=lambda *a: None)
+    if picked & {"dock", "taskbar-icons", "topbar"} and backend.name == "gnome":
+        from .backends import gnome
+        gnome.refresh_shell(st)  # the extension puts the stock top bar / dock look back at once
+    return n
+
+
+def terminals_on(env=None, backend=None):
+    """`wallrice terminal on`"""
+    return part_on("terminal", env, backend)
+
+
+def terminals_off(env=None, backend=None):
+    """`wallrice terminal off`"""
+    return part_off("terminal", env, backend)
 
 
 def _summary(img, th):

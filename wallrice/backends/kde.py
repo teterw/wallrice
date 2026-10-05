@@ -99,10 +99,17 @@ class Kde(Backend):
             super().restore_setting(key, value)
 
     def settings_touched(self, ctx):
-        keys = ["kde:colorscheme", "kde:icons", "kde:wallpaper"]
+        keys = ["kde:wallpaper"]
+        if ctx.on("apps"):
+            keys.append("kde:colorscheme")
+        if ctx.icons:
+            keys.append("kde:icons")
         if self.env.has("dconf"):
             keys += list(dconf_interface_keys(ctx))
         return keys
+
+    def part_of(self, key):
+        return {"kde:colorscheme": "apps", "kde:icons": "icons"}.get(key) or super().part_of(key)
 
     def changeicons(self):
         found = shutil.which("plasma-changeicons")
@@ -115,7 +122,9 @@ class Kde(Backend):
         return None
 
     def outputs(self, ctx):
-        files = {paths.data_home() / "color-schemes" / f"{scheme_name(ctx.slot)}.colors": color_scheme(ctx.theme, ctx.slot)}
+        files = {}
+        if ctx.on("apps"):
+            files[paths.data_home() / "color-schemes" / f"{scheme_name(ctx.slot)}.colors"] = color_scheme(ctx.theme, ctx.slot)
         files.update(gtk_settings_files(ctx))
         return files
 
@@ -128,12 +137,12 @@ class Kde(Backend):
 
     def activate(self, ctx):
         acc = "#%02x%02x%02x" % rgb255(ctx.theme["accent"])
-        steps = [("colour scheme", lambda: self.apply_scheme(ctx.slot, acc))]
+        steps = [("colour scheme", lambda: self.apply_scheme(ctx.slot, acc))] if ctx.on("apps") else []
         if ctx.icons and self.changeicons():
             steps.append(("icons", lambda: self.run(self.changeicons(), icons.theme_name(ctx.slot))))
-        if self.env.has("dconf"):
+        if self.env.has("dconf") and dconf_interface_keys(ctx):
             steps.append(("GTK apps", lambda: self.load(dconf_interface_keys(ctx))))
-        if self.env.session == "x11":
+        if self.env.session == "x11" and (ctx.on("apps") or ctx.icons):
             steps.append(("GTK apps (xsettingsd)", lambda: xsettingsd(ctx, self.run)))
         return steps
 

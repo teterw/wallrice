@@ -88,7 +88,8 @@ def install(dry_run=False, say=print):
             done = False
         say(f"shortcut {binding}: wallrice {args}" if done else
             f"shortcut {binding}: {be.bind_hint(binding, f'{exe()} {args}')}")
-    set_rotation(st.get("rotate_minutes", 30), dry_run, say)
+    from . import parts
+    set_rotation((st.get("rotate_minutes") or 30) if parts.is_on(st, "rotation") else 0, dry_run, say)
     if env.has("update-desktop-database") and not dry_run:
         run("update-desktop-database", str(apps_dir))
     if be.name == "gnome" and env.has("gnome-shell"):

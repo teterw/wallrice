@@ -39,10 +39,12 @@ class Commands(unittest.TestCase):
             self.assertFalse(load_state()["paused"])
             run_cli("rotate", "15m")
             self.assertEqual(load_state()["rotate_minutes"], 15)
-            run_cli("rotate", "off")
-            self.assertEqual(load_state()["rotate_minutes"], 0)
+            run_cli("rotate", "off")  # the rotation part off; the interval is remembered for `on`
+            self.assertFalse(load_state()["rotation"])
             code, out = run_cli("status")
-            self.assertEqual(json.loads(out)["rotate_minutes"], 0)
+            self.assertEqual((json.loads(out)["rotation"], json.loads(out)["rotate_minutes"]), (False, 15))
+            run_cli("rotate", "20")
+            self.assertEqual((load_state()["rotation"], load_state()["rotate_minutes"]), (True, 20))
 
     def test_next_only_rotates_collections(self):
         """The timer never swaps in the distro's default wallpapers: only downloaded collections."""

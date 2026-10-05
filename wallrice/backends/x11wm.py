@@ -27,6 +27,8 @@ class X11wm(Backend):
     def outputs(self, ctx):
         hx = hexes(ctx.theme)
         files = gtk_settings_files(ctx)
+        if not ctx.on("apps"):  # window borders are part of the apps' colours
+            return files
         files[paths.config_home() / "i3" / "wallrice"] = (
             f"# {HEADER}\n# in i3's config:  include ~/.config/i3/wallrice\n"
             f"client.focused {hx['accent']} {hx['accent']} {hx['on_accent']} {hx['accent']} {hx['accent']}\n"
@@ -50,6 +52,8 @@ class X11wm(Backend):
     def activate(self, ctx):
         hx = hexes(ctx.theme)
         steps = [("GTK apps (xsettingsd)", lambda: xsettingsd(ctx, self.run))]
+        if not ctx.on("apps"):
+            return steps
         if self.env.compositor == "bspwm" and self.env.has("bspc"):
             steps.append(("bspwm borders", lambda: (self.run("bspc", "config", "focused_border_color", hx["accent"]),
                                                      self.run("bspc", "config", "normal_border_color", hx["surface2"]))))

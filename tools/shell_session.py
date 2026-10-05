@@ -72,6 +72,12 @@ def main():
             time.sleep(1.2)
             shot(f"bar-{n}")
         subprocess.run([*WALLRICE, "bar", "1"], check=True, capture_output=True)
+        subprocess.run([*WALLRICE, "off", "topbar", "taskbar-icons", "dock"], check=True, capture_output=True)
+        time.sleep(1.5)
+        shot("parts-off")
+        subprocess.run([*WALLRICE, "on", "topbar", "taskbar-icons", "dock"], check=True, capture_output=True)
+        time.sleep(1.5)
+        shot("parts-on")
         for i, effect in enumerate(("grow", "wipe", "wave", "fade"), 1):
             time.sleep(1.5)
             p = subprocess.Popen([*WALLRICE, "apply", str(picks[i]), "--effect", effect], stdout=subprocess.DEVNULL)

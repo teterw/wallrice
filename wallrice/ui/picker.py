@@ -24,7 +24,7 @@ gi.require_version("Gdk", "3.0")
 import cairo  # noqa: E402
 from gi.repository import Gdk, GLib, Gtk  # noqa: E402
 
-from .. import backends, barstyles, collections, detect, engine, palette  # noqa: E402
+from .. import backends, barstyles, collections, detect, engine, palette, parts  # noqa: E402
 from ..color import rgb2hex  # noqa: E402
 from ..state import load_review, load_state, save_review  # noqa: E402
 from ..theme import derive, mix_theme  # noqa: E402
@@ -76,7 +76,9 @@ class PickerView:
         self.toast, self.last_remove = None, -1e9
         self.remove_btn, self.hover_remove, self.current_removed = None, False, False
         self.guard = KeyGuard(gap=0.25)
-        self.bar_style = barstyles.get(load_state().get("bar_style"))
+        st = load_state()
+        self.bar_style = barstyles.get(st.get("bar_style"))
+        self.look = {p: parts.is_on(st, p) for p in ("topbar", "taskbar-icons")}  # the mock draws what's on
         self.last = now
 
     def d(self, seconds):
@@ -393,7 +395,7 @@ class PickerView:
             cr.save()
             cr.translate(x, y)
             cr.scale(w / self.W, h / self.H)
-            draw_mock(cr, th, mock, self.W, self.H, self.bar_style)
+            draw_mock(cr, th, mock, self.W, self.H, self.bar_style, self.look)
             cr.restore()
         cr.restore()
         if t > 0.02:
@@ -542,12 +544,19 @@ class PickerView:
                 cr.stroke()
 
 
-def draw_mock(cr, th, a, W, H, style=None):
+def draw_mock(cr, th, a, W, H, style=None, look=None):
     """The desktop as it will look, at real size (the card scales it down): the islands top bar,
     a file manager with accent folders, a terminal with all 16 colours, a widget, the floating dock."""
     acc, fg, muted, bg, s1, s2 = th["accent"], th["fg"], th["muted"], th["bg"], th["surface"], th["surface2"]
 
-    barstyles.draw_bar(cr, th, style or barstyles.get(None), W, a, text=text, now=time.time())
+    look = look or {}
+    if look.get("topbar", True):
+        barstyles.draw_bar(cr, th, style or barstyles.get(None), W, a, text=text, now=time.time())
+    else:  # the desktop's own top bar: a plain dark strip with the clock in the middle
+        cr.rectangle(0, 0, W, 32)
+        cr.set_source_rgba(0, 0, 0, 0.85 * a)
+        cr.fill()
+        text(cr, time.strftime("%a %d %b  %H:%M"), W / 2, 8, 14, (1, 1, 1), a, "Bold", align="center")
 
     def window(x, y, w, h, title):
         shadow(cr, x, y, w, h, 12, 0.08 * a, steps=4, spread=2, drop=6)
@@ -652,7 +661,10 @@ def draw_mock(cr, th, a, W, H, style=None):
     for i in range(9):
         cx = dx + 35 + i * (dw - 70) / 8
         rrect(cr, cx - 15, dy + 11, 30, 30, 8)
-        cr.set_source_rgba(*fg, 0.88 * a)
+        if look.get("taskbar-icons", True):  # flat monochrome app icons
+            cr.set_source_rgba(*fg, 0.88 * a)
+        else:  # the apps' own colourful icons
+            cr.set_source_rgba(*th["term"][1 + i % 6], a)
         cr.fill()
         if i in (0, 2, 5):  # running dots in the accent
             cr.arc(cx, dy + dh - 6, 2.2, 0, 2 * math.pi)

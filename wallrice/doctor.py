@@ -93,8 +93,9 @@ def report(env=None, say=print):
     minutes = st.get("rotate_minutes") or 0
     line(OK if rc == 0 else INFO, f"rotation: {'every ' + str(minutes) + ' min' if rc == 0 else 'off'}"
          + (" (paused)" if st.get("paused") else ""))
-    line(INFO, f"animations {'on' if st.get('animations', True) else 'off'} · mode {st.get('mode', 'all')} · "
-               f"terminal colours {'on' if st.get('terminal_colors', True) else 'off'} (wallrice terminal on|off)")
+    from . import parts
+    off = [p.name for p in parts.PARTS if not parts.is_on(st, p)]
+    line(INFO, f"mode {st.get('mode', 'all')} · parts off: {', '.join(off) if off else 'none'}  (wallrice parts)")
     pics = collections.all_pictures()
     line(OK if pics else INFO, f"{len(pics)} wallpapers in {paths.walls()}" + ("" if pics else ": run  wallrice walls update"))
     cur = st.get("wallpaper")

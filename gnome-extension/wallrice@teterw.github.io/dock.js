@@ -1,5 +1,5 @@
 // Dash to Dock / Ubuntu Dock in wallrice's look: the generated stylesheet colours the floating dock, and
-// this makes its app icons flat and monochrome (a desaturate effect on each icon, so the accent-coloured
+// this makes its app icons flat and monochrome (each can be turned off) (a desaturate effect on each icon, so the accent-coloured
 // running dots keep their colour). Docks are found as they appear: Dash to Dock may load after wallrice
 // and rebuilds its dock when its settings change.
 import Clutter from 'gi://Clutter';
@@ -20,6 +20,7 @@ function* walk(actor) {
 export class Dock {
     constructor() {
         this._mono = true;
+        this._styled = true;
         this._docks = new Map();  // container -> [signal ids on its dash box]
         this._uiId = 0;
         this._later = 0;
@@ -32,7 +33,10 @@ export class Dock {
         this._scan();
     }
 
-    setMono(mono) {
+    /** styled: the dock in the theme's colours (`wallrice on|off dock`); mono: flat monochrome app
+     * icons (`wallrice on|off taskbar-icons`). */
+    configure({styled = true, mono = true} = {}) {
+        this._styled = styled;
         this._mono = mono;
         this._scan();
     }
@@ -52,12 +56,15 @@ export class Dock {
             if (actor.name !== NAME)
                 continue;
             if (!this._docks.has(actor)) {
-                actor.add_style_class_name('wallrice-dock');
                 const box = actor.dash?._box;
                 const ids = box ? [box.connect('child-added', () => this._soon())] : [];
                 ids.destroyId = actor.connect('destroy', () => this._docks.delete(actor));
                 this._docks.set(actor, ids);
             }
+            if (this._styled)
+                actor.add_style_class_name('wallrice-dock');
+            else
+                actor.remove_style_class_name('wallrice-dock');
             this._paint(actor);
         }
     }

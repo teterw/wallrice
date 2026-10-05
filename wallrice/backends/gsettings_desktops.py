@@ -27,7 +27,7 @@ class GsettingsDesktop(Backend):
         raise NotImplementedError
 
     def theme_keys(self, ctx):
-        keys = {f"{self.IFACE}/gtk-theme": gv_str(gtk.theme_name(ctx.slot))}
+        keys = {f"{self.IFACE}/gtk-theme": gv_str(gtk.theme_name(ctx.slot))} if ctx.on("apps") else {}
         if ctx.icons:
             keys[f"{self.IFACE}/icon-theme"] = gv_str(icons.theme_name(ctx.slot))
         return keys
@@ -44,8 +44,16 @@ class GsettingsDesktop(Backend):
         self.load(self.wallpaper_keys(ctx.img))
         return OVERLAY_HALF if started else 0.0
 
+    def part_of(self, key):
+        if key == f"{self.IFACE}/gtk-theme":
+            return "apps"
+        if key == f"{self.IFACE}/icon-theme":
+            return "icons"
+        return super().part_of(key)
+
     def activate(self, ctx):
-        return [(f"{self.name} theme and icons", lambda: self.load(self.theme_keys(ctx)))]
+        keys = self.theme_keys(ctx)
+        return [(f"{self.name} theme and icons", lambda: self.load(keys))] if keys else []
 
     def finish(self):
         self.overlay.finish()

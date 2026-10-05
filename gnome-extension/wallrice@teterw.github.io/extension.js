@@ -49,8 +49,7 @@ export default class WallriceExtension extends Extension {
         // the picker opens and closes with its own zoom: the Shell's window animations would get in
         // the way of the seamless hand-over to the desktop
         global.display.connectObject('window-created', (_d, win) => this._skipEffects(win), this);
-        this._bar = new Bar(args => this._runWallrice(args));
-        this._bar.enable();
+        this._bar = null;  // the islands top bar: made by _reload() unless it's turned off
         this._dock = new Dock();
         this._dock.enable();
         this._monitors = [this._cssFile, this._jsonFile].map(f => {
@@ -206,7 +205,9 @@ export default class WallriceExtension extends Extension {
         } catch {
             settings = {};
         }
-        this._dock?.setMono(settings.dock_mono !== false);
+        const mono = settings.dock_mono !== false;
+        this._dock?.configure({styled: settings.dock !== false, mono});
+        this._setTopbar(settings.topbar !== false, mono);
         if (!this._cssFile.query_exists(null)) {
             this._unloadStylesheet();
             return;
@@ -221,6 +222,18 @@ export default class WallriceExtension extends Extension {
         } catch (e) {
             logError(e, 'wallrice: stylesheet');
         }
+    }
+
+    _setTopbar(on, mono) {
+        // `wallrice off topbar` puts the Shell's own top bar back; `on` brings the islands again
+        if (on && !this._bar) {
+            this._bar = new Bar(args => this._runWallrice(args), mono);
+            this._bar.enable();
+        } else if (!on && this._bar) {
+            this._bar.disable();
+            this._bar = null;
+        }
+        this._bar?.setMono(mono);
     }
 
     _unloadStylesheet() {

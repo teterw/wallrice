@@ -38,6 +38,7 @@ GNOME_FADE = 1.0  # GNOME Shell's own background cross-fade (FADE_ANIMATION_TIME
 
 class Gnome(Backend):
     name = "gnome"
+    parts = Backend.parts | {"dock", "taskbar-icons", "topbar"}
     features = {"wallpaper": "gsettings", "live colours": "A/B GTK theme, accent-color, icons, Ptyxis, dock",
                 "transition": "Shell cross-fade, or the wallrice extension", "Super+W": "custom keybinding"}
 
@@ -83,13 +84,16 @@ class Gnome(Backend):
         return shell_files(ctx.theme)
 
     def theme_keys(self, ctx):
+        """The GNOME settings of every part that's on: apps (GTK theme, accent), icons, dock."""
         th = ctx.theme
-        keys = {f"{IFACE}/color-scheme": gv_str("prefer-dark"),
-                f"{IFACE}/gtk-theme": gv_str(gtk.theme_name(ctx.slot)),
-                f"{IFACE}/accent-color": gv_str(nearest(th["accent"], ACCENTS))}
+        keys = {}
+        if ctx.on("apps"):
+            keys.update({f"{IFACE}/color-scheme": gv_str("prefer-dark"),
+                         f"{IFACE}/gtk-theme": gv_str(gtk.theme_name(ctx.slot)),
+                         f"{IFACE}/accent-color": gv_str(nearest(th["accent"], ACCENTS))})
         if ctx.icons:
             keys[f"{IFACE}/icon-theme"] = gv_str(icons.theme_name(ctx.slot))
-        if self.dock_installed():
+        if ctx.on("dock") and self.dock_installed():
             acc = rgb2hex(th["accent"])
             keys.update({f"{DOCK}/custom-background-color": "true",
                          f"{DOCK}/background-color": gv_str(rgb2hex(th["bg"])),
@@ -100,7 +104,7 @@ class Gnome(Backend):
 
     def ptyxis_keys(self, ctx):
         """Every Ptyxis profile on the fresh wallrice palette (none when terminal colours are off)."""
-        if not ctx.terminals:
+        if not ctx.on("terminal"):
             return {}
         return {f"{PTYXIS}/Profiles/{uuid}/palette": gv_str(f"wallrice-{ctx.term_slot}")
                 for uuid in self.ptyxis_profiles()}
@@ -112,8 +116,12 @@ class Gnome(Backend):
                 return name[-1]
         return None
 
-    def is_terminal_setting(self, key):
-        return key.startswith(f"{PTYXIS}/")
+    def part_of(self, key):
+        if key.startswith(f"{PTYXIS}/"):
+            return "terminal"
+        if key.startswith(f"{DOCK}/"):
+            return "dock"
+        return super().part_of(key)
 
     def terminal_steps(self, ctx):
         keys = self.ptyxis_keys(ctx)
@@ -142,7 +150,7 @@ class Gnome(Backend):
 
     def activate(self, ctx):
         keys = {**self.theme_keys(ctx), **self.ptyxis_keys(ctx)}  # one transaction: everything at once
-        return [("GNOME theme, accent, icons, terminal and dock", lambda: self.load(keys))]
+        return [("GNOME theme, accent, icons, terminal and dock", lambda: self.load(keys))] if keys else []
 
     # ---------------------------------------------------------------- Super+W
 
@@ -197,9 +205,11 @@ def shell_css_path():
 
 def shell_files(theme, st=None):
     """{path: text} for the extension: its stylesheet, and its settings (bar style, dock icons)."""
+    from .. import parts
     st = st or load_state()
     style = barstyles.get(st.get("bar_style"))
-    settings = {"bar_style": style.id, "dock_mono": bool(st.get("dock_mono", True)), "workspaces": 4}
+    settings = {"bar_style": style.id, "dock_mono": parts.is_on(st, "taskbar-icons"),
+                "topbar": parts.is_on(st, "topbar"), "dock": parts.is_on(st, "dock"), "workspaces": 4}
     return {shell_css_path(): barstyles.shell_css(theme, style, dock=True),
             paths.data() / "gnome-shell.json": json.dumps(settings, indent=1) + "\n"}
 

@@ -74,7 +74,9 @@ def ini_set(text, section, values):
 def gtk_settings_files(ctx):
     """~/.config/gtk-{3,4}.0/settings.ini: the theme for GTK apps started from now on (on desktops
     without a settings daemon, that's how GTK finds its theme)."""
-    values = {"gtk-theme-name": gtk.theme_name(ctx.slot), "gtk-application-prefer-dark-theme": "1"}
+    values = {}
+    if ctx.on("apps"):
+        values.update({"gtk-theme-name": gtk.theme_name(ctx.slot), "gtk-application-prefer-dark-theme": "1"})
     if ctx.icons:
         values["gtk-icon-theme-name"] = icons.theme_name(ctx.slot)
     out = {}
@@ -82,8 +84,9 @@ def gtk_settings_files(ctx):
         path = paths.config_home() / ver / "settings.ini"
         v = dict(values)
         if ver == "gtk-4.0":
-            v.pop("gtk-theme-name")  # libadwaita apps warn about a theme name; they use gtk.css
-        out[path] = ini_update(path, "Settings", v)
+            v.pop("gtk-theme-name", None)  # libadwaita apps warn about a theme name; they use gtk.css
+        if v:
+            out[path] = ini_update(path, "Settings", v)
     return out
 
 
@@ -92,11 +95,12 @@ def xsettingsd(ctx, run=run):
     config and make it reload, so running GTK apps switch theme at once."""
     conf = paths.config_home() / "xsettingsd" / "xsettingsd.conf"
     rc, _ = run("pgrep", "-x", "xsettingsd")
-    if rc != 0:
+    if rc != 0 or not (ctx.on("apps") or ctx.icons):
         return False
     lines = [l for l in (conf.read_text().splitlines() if conf.is_file() else [])
              if not l.startswith(("Net/ThemeName", "Net/IconThemeName"))]
-    lines.append(f'Net/ThemeName "{gtk.theme_name(ctx.slot)}"')
+    if ctx.on("apps"):
+        lines.append(f'Net/ThemeName "{gtk.theme_name(ctx.slot)}"')
     if ctx.icons:
         lines.append(f'Net/IconThemeName "{icons.theme_name(ctx.slot)}"')
     conf.parent.mkdir(parents=True, exist_ok=True)
@@ -107,8 +111,10 @@ def xsettingsd(ctx, run=run):
 
 def dconf_interface_keys(ctx):
     """GTK apps on Wayland (and GNOME-based settings daemons) read org.gnome.desktop.interface."""
-    keys = {"/org/gnome/desktop/interface/gtk-theme": gv_str(gtk.theme_name(ctx.slot)),
-            "/org/gnome/desktop/interface/color-scheme": gv_str("prefer-dark")}
+    keys = {}
+    if ctx.on("apps"):
+        keys.update({"/org/gnome/desktop/interface/gtk-theme": gv_str(gtk.theme_name(ctx.slot)),
+                     "/org/gnome/desktop/interface/color-scheme": gv_str("prefer-dark")})
     if ctx.icons:
         keys["/org/gnome/desktop/interface/icon-theme"] = gv_str(icons.theme_name(ctx.slot))
     return keys
