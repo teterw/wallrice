@@ -118,7 +118,6 @@ def install_extension(be, dry_run=False, say=print):
     say(f"GNOME Shell extension: {dest}")
     if dry_run:
         return
-    was_there = dest.is_dir()
     shutil.rmtree(dest, ignore_errors=True)
     shutil.copytree(src, dest)
     enabled = gv_list(be.read(ENABLED))
@@ -126,14 +125,18 @@ def install_extension(be, dry_run=False, say=print):
         be.load({ENABLED: "[" + ", ".join(gv_str(u) for u in enabled + [EXT_UUID]) + "]"})
     if be.read("/org/gnome/shell/disable-user-extensions") == "true":
         say("  note: GNOME has user extensions switched off (Extensions app); the top bar and transitions need them")
-    rc, _ = run("gnome-extensions", "info", EXT_UUID)
-    if rc == 0:  # the Shell knows it already (an upgrade): reload it now
-        run("gnome-extensions", "disable", EXT_UUID)
-        run("gnome-extensions", "enable", EXT_UUID)
-        say("  reloaded")
+    rc, info = run("gnome-extensions", "info", EXT_UUID)
+    if rc != 0:
+        say("  log out and back in once to start it (GNOME can't load a new extension into a running session)")
+        return
+    # GNOME keeps an extension's code until the session ends: a new version runs after the next login
+    running = next((l.split(":", 1)[1].strip() for l in info.splitlines() if l.strip().startswith("Version:")), "")
+    import json
+    new = json.loads((src / "metadata.json").read_text()).get("version-name", "")
+    if running and new and running != new:
+        say(f"  updated to {new} (the session still runs {running}): log out and back in to load it")
     else:
-        say("  log out and back in once to start it (GNOME can't load a new extension into a running session)"
-            if not was_there else "  enabled")
+        say("  up to date")
 
 
 def uninstall_extension(be, dry_run=False, say=print):
