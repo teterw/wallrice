@@ -44,12 +44,25 @@ def open_terminals(uid=None, pts=Path("/dev/pts")):
     return out
 
 
+# Back to each terminal's own colours: reset the 16 colours, text, background and cursor
+RESET = "\033]104\033\\\033]110\033\\\033]111\033\\\033]112\033\\"
+
+
 def send_osc(theme, terminals=None):
     """Write the sequences to every open terminal. Returns how many took them. WALLRICE_TERMINALS=0
     turns this off (the headless Shell test does, so it can't recolour the real desktop's terminals)."""
+    return send(osc(theme), terminals)
+
+
+def send_reset(terminals=None):
+    """Give every open terminal its own colours back (`wallrice terminal off`)."""
+    return send(RESET, terminals)
+
+
+def send(text, terminals=None):
     if terminals is None and os.environ.get("WALLRICE_TERMINALS") == "0":
         return 0
-    seq = osc(theme).encode()
+    seq = text.encode()
     n = 0
     for p in open_terminals() if terminals is None else terminals:
         try:
@@ -145,6 +158,7 @@ INCLUDES = {
 
 
 def outputs(theme, env, slot):
+    """Colour files for every installed terminal; `slot` is the terminal's own A/B slot."""
     files = {}
     if env.has("ptyxis"):
         files.update(ptyxis_palette(theme, slot))

@@ -83,10 +83,18 @@ class Xfce(Backend):
     def settings_touched(self, ctx):
         keys = ["xfconf:xsettings:/Net/ThemeName", "xfconf:xsettings:/Net/IconThemeName"]
         keys += [f"xfconf:xfce4-desktop:{p}" for p in self.wallpaper_props()]
-        if self.env.has("xfce4-terminal"):
+        if self.env.has("xfce4-terminal") and ctx.terminals:
             keys += [f"xfconf:xfce4-terminal:/{k}" for k in ("color-use-theme", "color-foreground", "color-background",
                                                               "color-cursor", "color-palette")]
         return keys
+
+    def is_terminal_setting(self, key):
+        return key.startswith("xfconf:xfce4-terminal:")
+
+    def terminal_steps(self, ctx):
+        if not (ctx.terminals and self.env.has("xfce4-terminal")):
+            return []
+        return [("xfce4-terminal", lambda: self.terminal(ctx.theme))]
 
     # ---------------------------------------------------------------- applying
 
@@ -113,9 +121,7 @@ class Xfce(Backend):
         steps = [("GTK theme", lambda: self.set("xsettings", "/Net/ThemeName", gtk.theme_name(ctx.slot)))]
         if ctx.icons:
             steps.append(("icons", lambda: self.set("xsettings", "/Net/IconThemeName", icons.theme_name(ctx.slot))))
-        if self.env.has("xfce4-terminal"):
-            steps.append(("xfce4-terminal", lambda: self.terminal(ctx.theme)))
-        return steps
+        return steps + self.terminal_steps(ctx)
 
     def terminal(self, th):
         self.set("xfce4-terminal", "/color-use-theme", False, "bool")

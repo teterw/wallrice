@@ -89,8 +89,6 @@ class Gnome(Backend):
                 f"{IFACE}/accent-color": gv_str(nearest(th["accent"], ACCENTS))}
         if ctx.icons:
             keys[f"{IFACE}/icon-theme"] = gv_str(icons.theme_name(ctx.slot))
-        for uuid in self.ptyxis_profiles():
-            keys[f"{PTYXIS}/Profiles/{uuid}/palette"] = gv_str(f"wallrice-{ctx.slot}")
         if self.dock_installed():
             acc = rgb2hex(th["accent"])
             keys.update({f"{DOCK}/custom-background-color": "true",
@@ -100,12 +98,33 @@ class Gnome(Backend):
                          f"{DOCK}/custom-theme-running-dots-border-color": gv_str(acc)})
         return keys
 
+    def ptyxis_keys(self, ctx):
+        """Every Ptyxis profile on the fresh wallrice palette (none when terminal colours are off)."""
+        if not ctx.terminals:
+            return {}
+        return {f"{PTYXIS}/Profiles/{uuid}/palette": gv_str(f"wallrice-{ctx.term_slot}")
+                for uuid in self.ptyxis_profiles()}
+
+    def current_term_slot(self):
+        for uuid in self.ptyxis_profiles():
+            name = gv_strip(self.read(f"{PTYXIS}/Profiles/{uuid}/palette"))
+            if name in ("wallrice-a", "wallrice-b"):
+                return name[-1]
+        return None
+
+    def is_terminal_setting(self, key):
+        return key.startswith(f"{PTYXIS}/")
+
+    def terminal_steps(self, ctx):
+        keys = self.ptyxis_keys(ctx)
+        return [("Ptyxis palette", lambda: self.load(keys))] if keys else []
+
     def wallpaper_keys(self, img):
         uri = gv_str(Path(img).as_uri())
         return {f"{BG}/picture-uri": uri, f"{BG}/picture-uri-dark": uri, f"{BG}/picture-options": gv_str("zoom")}
 
     def settings_touched(self, ctx):
-        return sorted({**self.wallpaper_keys(ctx.img), **self.theme_keys(ctx)})
+        return sorted({**self.wallpaper_keys(ctx.img), **self.theme_keys(ctx), **self.ptyxis_keys(ctx)})
 
     def set_wallpaper(self, ctx):
         """With the wallrice extension running, it plays the effect (or none: the picker has already
@@ -122,7 +141,8 @@ class Gnome(Backend):
         return length * 0.5
 
     def activate(self, ctx):
-        return [("GNOME theme, accent, icons, terminal and dock", lambda: self.load(self.theme_keys(ctx)))]
+        keys = {**self.theme_keys(ctx), **self.ptyxis_keys(ctx)}  # one transaction: everything at once
+        return [("GNOME theme, accent, icons, terminal and dock", lambda: self.load(keys))]
 
     # ---------------------------------------------------------------- Super+W
 
@@ -160,7 +180,10 @@ class Gnome(Backend):
         out.append((True if self.dock_installed() else None,
                     "Dash to Dock " + ("found: its colours follow the wallpaper" if self.dock_installed() else "not installed (optional)")))
         if self.env.has("ptyxis"):
-            out.append((True, f"Ptyxis: {len(self.ptyxis_profiles())} profile(s) get the palette"))
+            from ..state import load_state
+            on = load_state().get("terminal_colors", True)
+            out.append((True, f"Ptyxis: {len(self.ptyxis_profiles())} profile(s) "
+                              + ("get the wallpaper's palette" if on else "keep their own palette (terminal colours off)")))
         return out
 
 

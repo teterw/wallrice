@@ -19,6 +19,8 @@ class Context:
     icons: dict = None        # the Papirus overlay plan, when Papirus is installed
     notes: list = field(default_factory=list)
     settle: float = 0.0       # seconds after apply() returns until the desktop fully shows the picture
+    terminals: bool = True    # recolour terminals too (`wallrice terminal on|off`)
+    term_slot: str = "a"      # the A/B copy of the terminal palette not in use
 
 
 class Backend:
@@ -48,6 +50,19 @@ class Backend:
 
     def finish(self):
         """Wait for anything still animating (a timer job's processes end with the job)."""
+
+    # Terminals, which can be left out of the theme (`wallrice terminal off`)
+    def current_term_slot(self):
+        """The A/B terminal palette in use, read from the terminal's settings, or None."""
+        return None
+
+    def terminal_steps(self, ctx):
+        """Live steps that recolour this desktop's own terminal: [(label, callable)]."""
+        return []
+
+    def is_terminal_setting(self, key):
+        """Whether a backed-up setting belongs to the terminal (restored by `wallrice terminal off`)."""
+        return False
 
     # Backups: settings are named by keys. dconf keys are paths ("/org/..."); backends with other
     # settings stores use their own prefixes ("xfconf:CHANNEL:PROP", "kde:...") and override these.

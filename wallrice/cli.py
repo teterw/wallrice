@@ -9,6 +9,7 @@
   wallrice pause | resume             no rotation and no animations while the machine is busy
   wallrice animations on|off          animated wallpaper changes
   wallrice bar [STYLE|mono|colour]    top bar style, with a live preview (GNOME); dock icon colours
+  wallrice terminal [on|off]          whether terminals take the wallpaper's colours too (saved)
   wallrice walls update [--background]  download or update the wallpaper collections
   wallrice walls review               keep or remove each picture; removed ones stay gone
   wallrice walls status               what's downloaded, kept and removed
@@ -160,6 +161,23 @@ def cmd_bar(args):
     return barchooser.main()
 
 
+def cmd_terminal(args):
+    if not args.onoff:
+        on = load_state().get("terminal_colors", True)
+        print(f"terminal colours: {'on' if on else 'off'}  (wallrice terminal {'off' if on else 'on'} to change)")
+        return 0
+    if args.onoff == "on":
+        notes = engine.terminals_on()
+        print("terminal colours: on. Terminals follow the wallpaper (open ones changed now).")
+        for n in notes:
+            print(f"  note: {n}")
+    else:
+        n = engine.terminals_off()
+        print("terminal colours: off. Terminals keep their own colours"
+              + (f" ({n} setting{'s' if n != 1 else ''} put back)" if n else "") + ".")
+    return 0
+
+
 def cmd_animations(args):
     update_state(animations=args.onoff == "on")
     print(f"animations {args.onoff}")
@@ -203,6 +221,8 @@ def parser():
     r.add_argument("minutes")
     sub.add_parser("pause")
     sub.add_parser("resume")
+    t = sub.add_parser("terminal", help="terminal colours on or off")
+    t.add_argument("onoff", nargs="?", choices=("on", "off"))
     b = sub.add_parser("bar", help="top bar style")
     b.add_argument("style", nargs="?")
     an = sub.add_parser("animations")
@@ -243,5 +263,6 @@ def main(argv=None):
         return 0
     handlers = {"pick": cmd_pick, "random": cmd_random, "next": cmd_next, "walls": cmd_walls, "mode": cmd_mode,
                 "rotate": cmd_rotate, "pause": cmd_pause, "resume": cmd_pause, "animations": cmd_animations,
-                "status": cmd_status, "login": cmd_login, "bar": cmd_bar}
+                "status": cmd_status, "login": cmd_login, "bar": cmd_bar,
+                "terminal": cmd_terminal}
     return handlers[cmd](args)

@@ -87,6 +87,21 @@ def dconf_read(key):
     return out or None
 
 
+def restore_where(match, writer, say=None):
+    """Put back the originals of the settings `match(key)` picks, and forget them, so they're recorded
+    afresh the next time wallrice changes them. Returns how many were restored."""
+    m = load()
+    keys = [k for k in m["dconf"] if match(k)]
+    for key in sorted(keys):
+        value = m["dconf"].pop(key)
+        if say:
+            say(f"restore {key} = {value if value is not None else '(unset)'}")
+        writer(key, value)
+    if keys:
+        save(m)
+    return len(keys)
+
+
 def restore(dry_run=False, say=print, writer=None):
     """Put every recorded original back. `writer(key, value)` restores a setting (the backend's;
     plain dconf by default). Returns the number of things restored."""

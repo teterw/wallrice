@@ -38,6 +38,11 @@ card's ✕) removes a wallpaper for good, with **Ctrl+Z** to undo.
 | Dock | Dash to Dock / Ubuntu Dock background and running dots |
 | Other apps | btop, rofi, wofi, fuzzel and waybar colour files (`wallrice doctor` shows the line to include them) |
 
+Don't want your terminal recoloured? `wallrice terminal off` keeps your terminals' own colours for good
+(saved; every later wallpaper change leaves them alone, while the rest of the desktop still follows):
+Ptyxis gets its original palette back and open terminals are reset. `wallrice terminal on` brings the
+wallpaper's colours back, straight away.
+
 Colours are contrast-checked (WCAG): background always dark, text at 7:1 or more, accent at 3:1, muted
 text and terminal colours at 4.5:1. Grey wallpapers get a violet accent (`#8b5cf6`). Palettes come
 from [wallust](https://codeberg.org/explosion-mental/wallust) when it's installed, otherwise from a
@@ -97,6 +102,7 @@ wallrice rotate off|MINUTES         change the wallpaper on a timer (default 30)
 wallrice pause | resume             no rotation and no animations while the machine is busy
 wallrice animations on|off          animated wallpaper changes
 wallrice bar [STYLE|mono|colour]    top bar style with a live preview (GNOME); dock icon colours
+wallrice terminal [on|off]          whether terminals take the wallpaper's colours too (saved)
 wallrice walls update [--background]  download or update the wallpaper collections
 wallrice walls review               keep or remove each picture; removed ones stay gone
 wallrice walls status               what's downloaded, kept and removed

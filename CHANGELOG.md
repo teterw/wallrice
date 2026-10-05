@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.6.0: terminal colours on or off
+
+- `wallrice terminal on|off` (no argument shows which): whether terminals take the wallpaper's colours.
+  The choice is saved, so every later wallpaper change (picker, timer, random) respects it; the rest of
+  the desktop keeps following the wallpaper either way.
+- `off` puts the terminal's own settings back from the backup (Ptyxis's original palette,
+  xfce4-terminal's colours) and resets open terminals to their own colours; `on` recolours terminals
+  from the current wallpaper at once, without re-theming the rest.
+- The Ptyxis palette has its own A/B copy, so switching back on mid-session still updates open windows.
+
 ## v0.5.1: polish
 
 - `wallrice walls import FILE`: take Keep/Remove choices from another review.json, such as Chiron

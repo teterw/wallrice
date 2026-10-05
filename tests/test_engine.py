@@ -164,3 +164,79 @@ class Terminals(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TerminalToggle(unittest.TestCase):
+    """`wallrice terminal on|off`: saved, respected by every wallpaper change, and reversible."""
+
+    def setUp(self):
+        self.sent, self.resets = [], []
+        self.patches = [mock.patch.object(backup, "run", lambda *a, **k: (0, "")),
+                        mock.patch.object(backup, "has", lambda t: False),
+                        mock.patch.object(terminals, "send_osc", lambda th, terminals=None: self.sent.append(th) or 1),
+                        mock.patch.object(terminals, "send_reset", lambda terminals=None: self.resets.append(1) or 1),
+                        mock.patch("wallrice.render.icons.papirus_base", lambda: None)]
+        for p in self.patches:
+            p.start()
+
+    def tearDown(self):
+        for p in self.patches:
+            p.stop()
+
+    def test_off_on_and_saved_between_wallpapers(self):
+        palette_key = "/org/gnome/Ptyxis/Profiles/df8d/palette"
+        with fake_home() as home:
+            fake = FakeRun(ORIGINAL)
+            env, be = gnome(fake)
+            engine.apply(make_image(home / "a.png"), effect="none", env=env, backend=be, quiet=True)
+            self.assertEqual(fake.values[palette_key], "'wallrice-a'")
+            self.assertEqual(len(self.sent), 1)
+
+            restored = engine.terminals_off(env=env, backend=be)
+            self.assertEqual(restored, 1)
+            self.assertEqual(fake.values[palette_key], "'Monokai Dark'", "the terminal's own palette is back")
+            self.assertEqual(len(self.resets), 1, "open terminals get their own colours back")
+            self.assertFalse(state.load_state()["terminal_colors"])
+
+            # the next wallpapers (picker, timer, random) leave the terminal alone
+            for name, kind in (("b.png", "bright"), ("c.png", "grey")):
+                engine.apply(make_image(home / name, kind), effect="none", env=env, backend=be, quiet=True)
+            self.assertEqual(fake.values[palette_key], "'Monokai Dark'")
+            self.assertEqual(len(self.sent), 1, "no escape sequences while off")
+            self.assertNotIn(palette_key, backup.load()["dconf"], "nothing recorded while off")
+            self.assertEqual(fake.values["/org/gnome/desktop/interface/gtk-theme"], "'Wallrice-a'",
+                             "the rest of the desktop still follows the wallpaper")
+
+            engine.terminals_on(env=env, backend=be)
+            self.assertTrue(fake.values[palette_key].startswith("'wallrice-"), "on again: right away")
+            self.assertEqual(len(self.sent), 2)
+            self.assertEqual(backup.load()["dconf"][palette_key], "'Monokai Dark'", "original recorded again")
+            engine.apply(make_image(home / "d.png"), effect="none", env=env, backend=be, quiet=True)
+            self.assertEqual(len(self.sent), 3)
+
+    def test_ptyxis_switches_slots_by_itself(self):
+        """Turning colours on mid-session still switches Ptyxis to a fresh palette copy (it re-reads it)."""
+        palette_key = "/org/gnome/Ptyxis/Profiles/df8d/palette"
+        with fake_home() as home:
+            fake = FakeRun(ORIGINAL)
+            env, be = gnome(fake)
+            engine.apply(make_image(home / "a.png"), effect="none", env=env, backend=be, quiet=True)
+            self.assertEqual(fake.values[palette_key], "'wallrice-a'")
+            engine.terminals_off(env=env, backend=be)
+            engine.terminals_on(env=env, backend=be)
+            self.assertEqual(fake.values[palette_key], "'wallrice-b'", "on: the copy that wasn't used last")
+            seen = []
+            for name, kind in (("b.png", "bright"), ("c.png", "grey")):
+                engine.apply(make_image(home / name, kind), effect="none", env=env, backend=be, quiet=True)
+                seen.append(fake.values[palette_key])
+            self.assertEqual(seen, ["'wallrice-a'", "'wallrice-b'"], "every change alternates the palette copy")
+
+    def test_command_line(self):
+        from wallrice import cli
+        with fake_home(), mock.patch.object(engine, "terminals_off", return_value=1) as off, \
+                mock.patch.object(engine, "terminals_on", return_value=[]) as on, mock.patch("builtins.print"):
+            self.assertEqual(cli.main(["terminal", "off"]), 0)
+            off.assert_called_once()
+            self.assertEqual(cli.main(["terminal", "on"]), 0)
+            on.assert_called_once()
+            self.assertEqual(cli.main(["terminal"]), 0)

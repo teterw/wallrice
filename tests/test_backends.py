@@ -63,6 +63,17 @@ class Backends(unittest.TestCase):
             be.unbind_keys()
             self.assertNotIn("xfconf:xfce4-keyboard-shortcuts:/commands/custom/<Super>w", v)
 
+    def test_xfce_terminal_off(self):
+        from wallrice.state import update_state
+        with fake_home() as home:
+            fake = FakeRun(dict(XFCE_DESKTOP))
+            env = env_for("XFCE", "x11", "", "xfconf-query", "xfce4-terminal")
+            update_state(terminal_colors=False)
+            self.apply(home, env, fake)
+            self.assertFalse(any(k.startswith("xfconf:xfce4-terminal:") for k in fake.values),
+                             "xfce4-terminal keeps its own colours")
+            self.assertEqual(fake.values["xfconf:xsettings:/Net/ThemeName"], "Wallrice-a")
+
     def test_kde(self):
         with fake_home() as home:
             fake = FakeRun({"kde:General:ColorScheme": "BreezeDark"})
