@@ -140,6 +140,8 @@ def part_on(names, env=None, backend=None):
         if img and img.is_file():
             ctx = apply(img, effect="none", quiet=True, env=env, backend=backend)
             notes += ctx.notes
+    if set(names) & SHELL_PARTS:
+        refresh_shell(backend or backends.get(env or detect.detect()), load_state())
     return notes
 
 
@@ -159,10 +161,19 @@ def part_off(names, env=None, backend=None):
     if "rotation" in picked:
         from . import setup
         setup.set_rotation(0, say=lambda *a: None)
-    if picked & {"dock", "taskbar-icons", "topbar"} and backend.name == "gnome":
-        from .backends import gnome
-        gnome.refresh_shell(st)  # the extension puts the stock top bar / dock look back at once
+    if picked & SHELL_PARTS:
+        refresh_shell(backend, st)  # the extension puts the stock top bar / dock look back at once
     return n
+
+
+SHELL_PARTS = {"dock", "taskbar-icons", "topbar"}
+
+
+def refresh_shell(backend, st):
+    """Rewrite the GNOME Shell extension's settings (it restyles live) wherever they're in use."""
+    from .backends import gnome
+    if backend.name == "gnome" or gnome.shell_css_path().exists():
+        gnome.refresh_shell(st)
 
 
 def terminals_on(env=None, backend=None):
